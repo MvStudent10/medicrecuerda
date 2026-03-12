@@ -1,4 +1,4 @@
-export function calcularTomasDelDia(medicamentos, fecha) {
+export function calcularTomasDelDia(medicamentos, fecha, tomasRegistradas = {}) {
   const tomas = []
 
   for (const med of medicamentos) {
@@ -7,35 +7,44 @@ export function calcularTomasDelDia(medicamentos, fecha) {
     const [horaBase, minBase] = (med.horaInicio || '08:00').split(':').map(Number)
     const tomasPorDia = Math.floor(24 / med.frecuenciaHoras)
     const esDiaInicio = med.fechaInicio === fecha
+    const horarioFijo = med.horarioFijo || false
+
+    // Buscar la última toma real registrada de este medicamento hoy
+    const tomasDelMed = Object.values(tomasRegistradas).filter(
+      (t) => t.medicamentoId === med.id && t.tomado && t.horaReal
+    )
+
+    // Ordenar por horaReal descendente para obtener la última
+    tomasDelMed.sort((a, b) => b.horaReal.localeCompare(a.horaReal))
+    const ultimaTomaReal = tomasDelMed[0]
 
     for (let i = 0; i < tomasPorDia; i++) {
-      const totalMinutos = horaBase * 60 + minBase + i * med.frecuenciaHoras * 60
-      const horaFinal = Math.floor(totalMinutos / 60) % 24
-      const minFinal = totalMinutos % 60
+      let horaFinal, minFinal
 
-      // Si es el día de inicio ignoramos tomas anteriores a horaInicio
+      if (!horarioFijo && ultimaTomaReal && i > 0) {
+        // Calcular desde la última hora real tomada
+        const [horaUltima, minUltima] = ultimaTomaReal.horaReal.split(':').map(Number)
+        const totalMinutos = horaUltima * 60 + minUltima + i * med.frecuenciaHoras * 60
+        horaFinal = Math.floor(totalMinutos / 60) % 24
+        minFinal = totalMinutos % 60
+        if (Math.floor(totalMinutos / 60) >= 24) continue
+      } else {
+        // Calcular desde horaInicio original
+        const totalMinutos = horaBase * 60 + minBase + i * med.frecuenciaHoras * 60
+        horaFinal = Math.floor(totalMinutos / 60) % 24
+        minFinal = totalMinutos % 60
+        if (Math.floor(totalMinutos / 60) >= 24) continue
+      }
+
+      // Si es día de inicio ignorar tomas anteriores a horaInicio
       if (esDiaInicio) {
         const minutosTomaActual = horaFinal * 60 + minFinal
         const minutosInicio = horaBase * 60 + minBase
         if (minutosTomaActual < minutosInicio) continue
       }
 
-      if (Math.floor(totalMinutos / 60) >= 24 && i > 0) {
-        const horaStr = horaFinal.toString().padStart(2, '0') + ':' +
-          minFinal.toString().padStart(2, '0')
-        if (horaFinal >= horaBase) continue
-        tomas.push({
-          medicamentoId: med.id,
-          medicamentoNombre: med.nombre,
-          dosis: med.dosis,
-          fechaProgramada: fecha,
-          horaProgramada: horaStr,
-          tomado: false,
-        })
-        continue
-      }
-
-      const horaStr = horaFinal.toString().padStart(2, '0') + ':' +
+      const horaStr =
+        horaFinal.toString().padStart(2, '0') + ':' +
         minFinal.toString().padStart(2, '0')
 
       tomas.push({
@@ -45,6 +54,7 @@ export function calcularTomasDelDia(medicamentos, fecha) {
         fechaProgramada: fecha,
         horaProgramada: horaStr,
         tomado: false,
+        horarioFijo,
       })
     }
   }

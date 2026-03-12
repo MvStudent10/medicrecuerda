@@ -5,5 +5,5 @@ export function getFechaHoy() {
 
 export function getHoraActual() {
   const hoy = new Date()
-  return `${String(hoy.getHours()).padStart(2, '0')}:00`
+  return `${String(hoy.getHours()).padStart(2, '0')}:${String(hoy.getMinutes()).padStart(2, '0')}`
 }

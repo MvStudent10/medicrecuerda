@@ -11,7 +11,6 @@ import { db } from './firebase'
 
 const tomasRef = (uid) => collection(db, 'usuarios', uid, 'tomas')
 
-// ID determinista para evitar duplicados: medicamentoId_fecha_hora
 const generarTomaId = (medicamentoId, fecha, hora) =>
   `${medicamentoId}_${fecha}_${hora.replace(':', '')}`
 
@@ -27,16 +26,6 @@ export function suscribirTomasDelDia(uid, fecha, callback) {
     })
     callback(tomas)
   })
-}
-
-export async function marcarComoTomado(uid, toma) {
-  const tomaId = generarTomaId(toma.medicamentoId, toma.fechaProgramada, toma.horaProgramada)
-  const ref = doc(db, 'usuarios', uid, 'tomas', tomaId)
-  await setDoc(ref, {
-    ...toma,
-    tomado: true,
-    tomadoEn: serverTimestamp(),
-  }, { merge: true })
 }
 
 export function suscribirTomasDelMes(uid, anio, mes, callback) {
@@ -56,4 +45,15 @@ export function suscribirTomasDelMes(uid, anio, mes, callback) {
     }))
     callback(tomas)
   })
+}
+
+export async function marcarComoTomado(uid, toma, horaReal) {
+  const tomaId = generarTomaId(toma.medicamentoId, toma.fechaProgramada, toma.horaProgramada)
+  const ref = doc(db, 'usuarios', uid, 'tomas', tomaId)
+  await setDoc(ref, {
+    ...toma,
+    tomado: true,
+    horaReal: horaReal, // hora real en que se tomó HH:mm
+    tomadoEn: serverTimestamp(),
+  }, { merge: true })
 }

@@ -18,6 +18,7 @@ const getFormVacio = () => ({
   fechaInicio: getFechaHoy(),
   fechaFin: '',
   horaInicio: '08:00',
+  horarioFijo: false,
 })
 
 export default function ModalMedicamento({ medicamento, onCerrar }) {
@@ -35,6 +36,7 @@ export default function ModalMedicamento({ medicamento, onCerrar }) {
         fechaInicio: medicamento.fechaInicio,
         fechaFin: medicamento.fechaFin,
         horaInicio: medicamento.horaInicio || '08:00',
+        horarioFijo: medicamento.horarioFijo || false,
       })
     } else {
       setForm(getFormVacio())
@@ -71,6 +73,7 @@ export default function ModalMedicamento({ medicamento, onCerrar }) {
         fechaInicio: form.fechaInicio,
         fechaFin: form.fechaFin,
         horaInicio: form.horaInicio,
+        horarioFijo: form.horarioFijo === true || form.horarioFijo === 'true',
       }
       if (medicamento) {
         await editarMedicamento(user.uid, medicamento.id, datos)
@@ -171,6 +174,19 @@ export default function ModalMedicamento({ medicamento, onCerrar }) {
               className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+            <div className="flex items-center justify-between py-3 border-t border-gray-100">
+            <div>
+              <p className="text-sm font-medium text-gray-700">🔒 Mantener horario fijo</p>
+              <p className="text-xs text-gray-400 mt-0.5">Las tomas no se ajustan aunque te atrases</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setForm(prev => ({ ...prev, horarioFijo: !prev.horarioFijo }))}
+              className={`relative w-12 h-6 rounded-full transition-colors ${form.horarioFijo ? 'bg-blue-600' : 'bg-gray-300'}`}
+            >
+              <span className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.horarioFijo ? 'translate-x-7' : 'translate-x-1'}`} />
+            </button>
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
@@ -204,6 +220,7 @@ export default function ModalMedicamento({ medicamento, onCerrar }) {
               {error}
             </div>
           )}
+
 
           <div className="flex gap-3 pt-2">
             <button
