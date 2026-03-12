@@ -11,6 +11,23 @@ const FRECUENCIAS = [
   { label: 'Cada 24 horas (1 vez al día)', value: 24 },
 ]
 
+export const COLORES_MEDICAMENTO = [
+  { id: 'azul',     bg: 'bg-blue-500',   hex: '#3b82f6' },
+  { id: 'celeste',  bg: 'bg-sky-400',    hex: '#38bdf8' },
+  { id: 'verde',    bg: 'bg-emerald-500',hex: '#10b981' },
+  { id: 'amarillo', bg: 'bg-yellow-400', hex: '#facc15' },
+  { id: 'naranja',  bg: 'bg-orange-500', hex: '#f97316' },
+  { id: 'rojo',     bg: 'bg-red-500',    hex: '#ef4444' },
+  { id: 'rosa',     bg: 'bg-pink-400',   hex: '#f472b6' },
+  { id: 'morado',   bg: 'bg-purple-500', hex: '#a855f7' },
+  { id: 'gris',     bg: 'bg-gray-400',   hex: '#9ca3af' },
+]
+
+// Asigna color automático basado en índice
+export function getColorAuto(index) {
+  return COLORES_MEDICAMENTO[index % COLORES_MEDICAMENTO.length]
+}
+
 const getFormVacio = () => ({
   nombre: '',
   dosis: '',
@@ -19,9 +36,10 @@ const getFormVacio = () => ({
   fechaFin: '',
   horaInicio: '08:00',
   horarioFijo: false,
+  color: '',
 })
 
-export default function ModalMedicamento({ medicamento, onCerrar }) {
+export default function ModalMedicamento({ medicamento, totalMedicamentos = 0, onCerrar }) {
   const { user } = useAuth()
   const [form, setForm] = useState(getFormVacio())
   const [guardando, setGuardando] = useState(false)
@@ -37,6 +55,7 @@ export default function ModalMedicamento({ medicamento, onCerrar }) {
         fechaFin: medicamento.fechaFin,
         horaInicio: medicamento.horaInicio || '08:00',
         horarioFijo: medicamento.horarioFijo || false,
+        color: medicamento.color || '',
       })
     } else {
       setForm(getFormVacio())
@@ -66,6 +85,11 @@ export default function ModalMedicamento({ medicamento, onCerrar }) {
 
     setGuardando(true)
     try {
+      // Si no eligió color, asignar automáticamente
+      const colorFinal = form.color
+        ? form.color
+        : getColorAuto(totalMedicamentos).hex
+
       const datos = {
         nombre: form.nombre.trim(),
         dosis: form.dosis.trim(),
@@ -74,6 +98,7 @@ export default function ModalMedicamento({ medicamento, onCerrar }) {
         fechaFin: form.fechaFin,
         horaInicio: form.horaInicio,
         horarioFijo: form.horarioFijo === true || form.horarioFijo === 'true',
+        color: colorFinal,
       }
       if (medicamento) {
         await editarMedicamento(user.uid, medicamento.id, datos)
@@ -94,10 +119,8 @@ export default function ModalMedicamento({ medicamento, onCerrar }) {
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
       onClick={onCerrar}
     >
-      {/* Fondo oscuro */}
       <div className="absolute inset-0 bg-black/40" />
 
-      {/* Contenido */}
       <div
         className="relative bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[80vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
@@ -174,7 +197,41 @@ export default function ModalMedicamento({ medicamento, onCerrar }) {
               className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
-            <div className="flex items-center justify-between py-3 border-t border-gray-100">
+
+          {/* Selector de color */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Color del medicamento
+              <span className="text-gray-400 font-normal ml-1">(opcional)</span>
+            </label>
+            <div className="flex gap-2 flex-wrap">
+              {COLORES_MEDICAMENTO.map((color) => (
+                <button
+                  key={color.id}
+                  type="button"
+                  onClick={() => setForm(prev => ({
+                    ...prev,
+                    color: prev.color === color.hex ? '' : color.hex
+                  }))}
+                  className={`w-8 h-8 rounded-full transition-transform active:scale-90
+                    ${color.bg}
+                    ${form.color === color.hex
+                      ? 'ring-2 ring-offset-2 ring-gray-600 scale-110'
+                      : 'opacity-70 hover:opacity-100'
+                    }
+                  `}
+                />
+              ))}
+            </div>
+            {!form.color && (
+              <p className="text-xs text-gray-400 mt-1">
+                Se asignará un color automáticamente
+              </p>
+            )}
+          </div>
+
+          {/* Toggle horario fijo */}
+          <div className="flex items-center justify-between py-3 border-t border-gray-100">
             <div>
               <p className="text-sm font-medium text-gray-700">🔒 Mantener horario fijo</p>
               <p className="text-xs text-gray-400 mt-0.5">Las tomas no se ajustan aunque te atrases</p>
@@ -220,7 +277,6 @@ export default function ModalMedicamento({ medicamento, onCerrar }) {
               {error}
             </div>
           )}
-
 
           <div className="flex gap-3 pt-2">
             <button
