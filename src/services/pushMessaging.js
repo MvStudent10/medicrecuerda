@@ -2,7 +2,14 @@ import { doc, serverTimestamp, setDoc } from 'firebase/firestore'
 import { getMessaging, getToken, isSupported, onMessage } from 'firebase/messaging'
 import { app, db } from './firebase'
 
-const VAPID_KEY = import.meta.env.VITE_FIREBASE_VAPID_KEY
+const VAPID_KEY = String(import.meta.env.VITE_FIREBASE_VAPID_KEY || '')
+  .trim()
+  .replace(/^['"]|['"]$/g, '')
+
+function esVapidKeyValida(key) {
+  // Firebase entrega la clave publica VAPID en base64url (sin '='), normalmente ~87 chars.
+  return /^[A-Za-z0-9_-]{80,120}$/.test(key)
+}
 
 function buildServiceWorkerUrl() {
   const params = new URLSearchParams({
@@ -53,6 +60,9 @@ function esperarSwActivo(registration, timeoutMs = 12000) {
 export async function activarPushRecordatorios(uid) {
   if (!uid) throw new Error('Se requiere uid para activar push.')
   if (!VAPID_KEY) throw new Error('Falta VITE_FIREBASE_VAPID_KEY en variables de entorno.')
+  if (!esVapidKeyValida(VAPID_KEY)) {
+    throw new Error('VITE_FIREBASE_VAPID_KEY es invalida. Usa la clave publica Web Push (VAPID) de Firebase Cloud Messaging.')
+  }
 
   const soportado = await isSupported()
   if (!soportado) throw new Error('Este navegador no soporta Firebase Messaging.')
