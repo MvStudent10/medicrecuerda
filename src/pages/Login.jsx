@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendPasswordResetEmail } from 'firebase/auth'
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { auth, db } from '../services/firebase' // Asegúrate de exportar 'db'
 import { useNavigate } from 'react-router-dom'
@@ -18,6 +18,7 @@ export default function Login() {
   // Estados de la UI
   const [isRegistro, setIsRegistro] = useState(false)
   const [error, setError] = useState('')
+  const [mensaje, setMensaje] = useState('')
   const [cargando, setCargando] = useState(false)
   const [mostrarPassword, setMostrarPassword] = useState(false) // UX para accesibilidad
 
@@ -50,6 +51,7 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    setMensaje('')
 
     const errorValidacion = validar()
     if (errorValidacion) {
@@ -94,7 +96,27 @@ export default function Login() {
   const cambiarModo = () => {
     setIsRegistro(!isRegistro)
     setError('')
+    setMensaje('')
     setFormData({ nombre: '', email: '', password: '', confirmarPassword: '' })
+  }
+
+  const handleOlvidePassword = async () => {
+    setError('')
+    setMensaje('')
+    const emailLimpio = formData.email.trim().toLowerCase()
+
+    if (!emailLimpio) {
+      setError('Escribe tu correo para enviarte el enlace de recuperación.')
+      return
+    }
+
+    try {
+      await sendPasswordResetEmail(auth, emailLimpio)
+      setMensaje('Te enviamos un enlace para restablecer tu contraseña. Revisa tu correo.')
+    } catch (err) {
+      console.error('Error al enviar reset password:', err)
+      setError(mensajesError[err.code] || 'No se pudo enviar el correo de recuperación. Intenta de nuevo.')
+    }
   }
 
   return (
@@ -195,6 +217,12 @@ export default function Login() {
             </div>
           )}
 
+          {mensaje && (
+            <div role="status" className="mb-4 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg px-4 py-3">
+              {mensaje}
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={cargando}
@@ -202,6 +230,16 @@ export default function Login() {
           >
             {cargando ? 'Cargando...' : isRegistro ? 'Crear cuenta' : 'Iniciar sesión'}
           </button>
+
+          {!isRegistro && (
+            <button
+              type="button"
+              onClick={handleOlvidePassword}
+              className="w-full mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline"
+            >
+              ¿Olvidaste tu contraseña?
+            </button>
+          )}
         </form>
 
         {/* Toggle */}

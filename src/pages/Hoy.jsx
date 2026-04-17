@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useMedicamentos } from '../hooks/useMedicamentos'
-import { suscribirTomasDelDia, marcarComoTomado } from '../services/tomas'
+import { suscribirTomasDelDia, marcarComoTomado, marcarComoOmitido } from '../services/tomas'
 import { calcularTomasDelDia } from '../utils/calcularTomas'
 import { getFechaHoy, getHoraActual } from '../utils/fecha'
 
@@ -13,6 +13,7 @@ export default function Hoy() {
   const [modalToma, setModalToma] = useState(null)
   const [horaRealInput, setHoraRealInput] = useState('')
   const [confirmarPasadas, setConfirmarPasadas] = useState(null)
+  const [horaConfirmacionPasadas, setHoraConfirmacionPasadas] = useState(getHoraActual())
 
   const fecha = getFechaHoy()
   const horaActual = getHoraActual()
@@ -31,14 +32,23 @@ export default function Hoy() {
     `${toma.medicamentoId}_${toma.fechaProgramada}_${toma.horaProgramada.replace(':', '')}`
 
   const esTomado = (toma) => tomasRegistradas[tomaId(toma)]?.tomado === true
+  const esOmitido = (toma) => tomasRegistradas[tomaId(toma)]?.omitido === true
+  const esResuelto = (toma) => esTomado(toma) || esOmitido(toma)
 
-  const pendientes = tomasDelDia.filter((t) => !esTomado(t))
+  const pendientes = tomasDelDia.filter((t) => !esResuelto(t))
   const completadas = tomasDelDia.filter((t) => esTomado(t))
+  const omitidas = tomasDelDia.filter((t) => esOmitido(t))
+  const resueltas = tomasDelDia.filter((t) => esResuelto(t))
 
   // Tomas pasadas sin confirmar
   const tomasPasadasSinConfirmar = pendientes.filter(
     (t) => t.horaProgramada < horaActual
   )
+
+  const primeraPendienteVencida =
+    pendientes.length > 0 && pendientes[0].horaProgramada < horaActual
+      ? pendientes[0]
+      : null
 
   const abrirModalMarcar = (toma) => {
     setModalToma(toma)
@@ -58,17 +68,38 @@ export default function Hoy() {
     }
   }
 
+  const handleOmitir = async (toma) => {
+    const tomaObjetivo = toma || modalToma
+    if (!tomaObjetivo) return
+    const clave = tomaObjetivo.medicamentoId + tomaObjetivo.horaProgramada
+    setMarcando(clave)
+    try {
+      await marcarComoOmitido(user.uid, tomaObjetivo)
+      if (!toma) {
+        setModalToma(null)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setMarcando(null)
+    }
+  }
+
   const handleConfirmarPasadas = async (siLasTomo) => {
     if (siLasTomo) {
       for (const toma of tomasPasadasSinConfirmar) {
-        await marcarComoTomado(user.uid, toma, toma.horaProgramada)
+        await marcarComoTomado(user.uid, toma, horaConfirmacionPasadas || toma.horaProgramada)
+      }
+    } else {
+      for (const toma of tomasPasadasSinConfirmar) {
+        await marcarComoOmitido(user.uid, toma)
       }
     }
     setConfirmarPasadas(false)
   }
 
-  // Índice de la primera toma no tomada (para bloqueo)
-  const indicePrimeraNoTomada = pendientes.findIndex((t) => !esTomado(t))
+  // Índice de la primera toma pendiente (para bloqueo)
+  const indicePrimeraNoTomada = 0
 
   if (cargando) {
     return <p className="text-center text-gray-400 py-12">Cargando...</p>
@@ -96,20 +127,45 @@ export default function Hoy() {
           <p className="text-sm text-amber-700 mb-3">
             ¿Las tomaste?
           </p>
+          <label className="block text-xs font-medium text-amber-800 mb-1">
+            Hora aproximada para registrarlas
+          </label>
+          <input
+            type="time"
+            value={horaConfirmacionPasadas}
+            onChange={(e) => setHoraConfirmacionPasadas(e.target.value)}
+            className="w-full border border-amber-300 bg-white rounded-lg px-3 py-2 text-sm font-semibold text-center mb-3 focus:outline-none focus:ring-2 focus:ring-amber-400"
+          />
           <div className="flex gap-2">
             <button
               onClick={() => handleConfirmarPasadas(true)}
-              className="flex-1 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold py-2 rounded-lg transition-colors"
+              className="flex-1 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold py-3 rounded-lg transition-colors"
             >
               Sí, las tomé
             </button>
             <button
               onClick={() => handleConfirmarPasadas(false)}
-              className="flex-1 bg-red-400 hover:bg-red-500 text-white text-sm font-semibold py-2 rounded-lg transition-colors"
+              className="flex-1 bg-red-400 hover:bg-red-500 text-white text-sm font-semibold py-3 rounded-lg transition-colors"
             >
               No las tomé
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Acción rápida */}
+      {primeraPendienteVencida && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-6">
+          <p className="text-sm text-red-700 font-semibold mb-1">⚡ Acción rápida</p>
+          <p className="text-sm text-red-700 mb-3">
+            Tienes una toma vencida: {primeraPendienteVencida.medicamentoNombre} ({primeraPendienteVencida.horaProgramada})
+          </p>
+          <button
+            onClick={() => abrirModalMarcar(primeraPendienteVencida)}
+            className="w-full bg-red-600 hover:bg-red-700 text-white text-sm font-semibold py-3 rounded-lg transition-colors"
+          >
+            Marcar ahora
+          </button>
         </div>
       )}
 
@@ -119,15 +175,18 @@ export default function Hoy() {
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm font-medium text-blue-700">Progreso de hoy</span>
             <span className="text-sm font-bold text-blue-700">
-              {completadas.length}/{tomasDelDia.length}
+              {resueltas.length}/{tomasDelDia.length}
             </span>
           </div>
           <div className="w-full bg-blue-200 rounded-full h-2">
             <div
               className="bg-blue-600 h-2 rounded-full transition-all duration-500"
-              style={{ width: `${(completadas.length / tomasDelDia.length) * 100}%` }}
+              style={{ width: `${(resueltas.length / tomasDelDia.length) * 100}%` }}
             />
           </div>
+          <p className="text-xs text-blue-600 mt-2">
+            Tomadas: {completadas.length} · Omitidas: {omitidas.length}
+          </p>
         </div>
       )}
 
@@ -167,18 +226,55 @@ export default function Hoy() {
                       {esPasada ? '⚠️ Atrasada' : '🕐 Pendiente'} · {toma.horaProgramada}
                     </p>
                   </div>
-                  <button
-                    onClick={() => !estaBloqueada && abrirModalMarcar(toma)}
-                    disabled={marcando === claveMarcando || estaBloqueada}
-                    className={`text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors
-                      ${estaBloqueada ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300'}
-                    `}
-                  >
-                    {marcando === claveMarcando ? '...' : estaBloqueada ? '🔒' : 'Tomado ✓'}
-                  </button>
+                  <div className="flex flex-col gap-2 w-28">
+                    <button
+                      onClick={() => !estaBloqueada && abrirModalMarcar(toma)}
+                      disabled={marcando === claveMarcando || estaBloqueada}
+                      className={`text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors
+                        ${estaBloqueada ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300'}
+                      `}
+                    >
+                      {marcando === claveMarcando ? '...' : estaBloqueada ? '🔒' : 'Tomado ✓'}
+                    </button>
+                    <button
+                      onClick={() => !estaBloqueada && handleOmitir(toma)}
+                      disabled={marcando === claveMarcando || estaBloqueada}
+                      className={`text-white text-xs font-semibold px-3 py-2 rounded-xl transition-colors
+                        ${estaBloqueada ? 'bg-gray-300 cursor-not-allowed' : 'bg-gray-500 hover:bg-gray-600 disabled:bg-gray-300'}
+                      `}
+                    >
+                      Omitir
+                    </button>
+                  </div>
                 </div>
               )
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Tomas omitidas */}
+      {omitidas.length > 0 && (
+        <div className="mt-6">
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+            Omitidas
+          </h2>
+          <div className="space-y-3">
+            {omitidas.map((toma) => (
+              <div
+                key={tomaId(toma)}
+                className="bg-gray-50 rounded-2xl border border-gray-200 p-4 flex items-center justify-between"
+              >
+                <div>
+                  <p className="font-semibold text-gray-700 text-base">{toma.medicamentoNombre}</p>
+                  <p className="text-sm font-medium text-gray-500 mt-0.5">{toma.dosis}</p>
+                  <p className="text-sm mt-1 text-gray-600 font-semibold">
+                    ⏭️ Omitida · {toma.horaProgramada}
+                  </p>
+                </div>
+                <span className="text-xl">⏭️</span>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -247,6 +343,13 @@ export default function Hoy() {
                 className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold py-3 rounded-lg transition-colors"
               >
                 {marcando !== null ? 'Guardando...' : 'Confirmar'}
+              </button>
+              <button
+                onClick={() => handleOmitir()}
+                disabled={marcando !== null}
+                className="flex-1 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-300 text-white font-semibold py-3 rounded-lg transition-colors"
+              >
+                No la tomé
               </button>
               <button
                 onClick={() => setModalToma(null)}

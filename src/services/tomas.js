@@ -57,3 +57,15 @@ export async function marcarComoTomado(uid, toma, horaReal) {
     tomadoEn: serverTimestamp(),
   }, { merge: true })
 }
+
+export async function marcarComoOmitido(uid, toma) {
+  const tomaId = generarTomaId(toma.medicamentoId, toma.fechaProgramada, toma.horaProgramada)
+  const ref = doc(db, 'usuarios', uid, 'tomas', tomaId)
+  await setDoc(ref, {
+    ...toma,
+    tomado: false,
+    omitido: true,
+    horaReal: null,
+    omitidoEn: serverTimestamp(),
+  }, { merge: true })
+}

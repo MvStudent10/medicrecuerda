@@ -109,9 +109,13 @@ function Modal({ fecha, tomas, onCerrar }) {
                     </div>
                   </div>
                   <span className={`text-xs font-semibold px-2 py-1 rounded-full shrink-0 ml-2 ${
-                    toma.tomado ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-500'
+                    toma.tomado
+                      ? 'bg-green-100 text-green-600'
+                      : toma.omitido
+                        ? 'bg-gray-100 text-gray-600'
+                        : 'bg-red-100 text-red-500'
                   }`}>
-                    {toma.tomado ? '✅ Tomado' : '❌ Omitido'}
+                    {toma.tomado ? '✅ Tomado' : toma.omitido ? '⏭️ Omitido' : '❌ Sin confirmar'}
                   </span>
                 </div>
               ))}
