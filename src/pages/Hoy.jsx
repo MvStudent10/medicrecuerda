@@ -18,6 +18,7 @@ export default function Hoy() {
   const [tomasRegistradas, setTomasRegistradas] = useState({})
   const [marcando, setMarcando] = useState(null)
   const [modalToma, setModalToma] = useState(null)
+  const [confirmarOmitirToma, setConfirmarOmitirToma] = useState(null)
   const [horaRealInput, setHoraRealInput] = useState('')
   const [confirmarPasadas, setConfirmarPasadas] = useState(null)
   const [horaConfirmacionPasadas, setHoraConfirmacionPasadas] = useState(getHoraActual())
@@ -250,16 +251,23 @@ export default function Hoy() {
     }
   }
 
-  const handleOmitir = async (toma) => {
+  const confirmarOmitir = (toma) => {
     const tomaObjetivo = toma || modalToma
+    if (!tomaObjetivo) return
+    setConfirmarOmitirToma(tomaObjetivo)
+  }
+
+  const handleOmitir = async () => {
+    const tomaObjetivo = confirmarOmitirToma
     if (!tomaObjetivo) return
     const clave = tomaObjetivo.medicamentoId + tomaObjetivo.horaProgramada
     setMarcando(clave)
     try {
       await marcarComoOmitido(user.uid, tomaObjetivo)
-      if (!toma) {
+      if (modalToma && tomaObjetivo === modalToma) {
         setModalToma(null)
       }
+      setConfirmarOmitirToma(null)
     } catch (err) {
       console.error(err)
     } finally {
@@ -481,7 +489,7 @@ export default function Hoy() {
                       {marcando === claveMarcando ? '...' : estaBloqueada ? '🔒' : 'Tomado ✓'}
                     </button>
                     <button
-                      onClick={() => !estaBloqueada && handleOmitir(toma)}
+                      onClick={() => !estaBloqueada && confirmarOmitir(toma)}
                       disabled={marcando === claveMarcando || estaBloqueada}
                       className={`text-white text-xs font-semibold px-3 py-2 rounded-xl transition-colors
                         ${estaBloqueada ? 'bg-gray-300 cursor-not-allowed' : 'bg-gray-500 hover:bg-gray-600 disabled:bg-gray-300'}
@@ -589,7 +597,7 @@ export default function Hoy() {
                 {marcando !== null ? 'Guardando...' : 'Confirmar'}
               </button>
               <button
-                onClick={() => handleOmitir()}
+                onClick={() => confirmarOmitir()}
                 disabled={marcando !== null}
                 className="flex-1 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-300 text-white font-semibold py-3 rounded-lg transition-colors"
               >
@@ -600,6 +608,49 @@ export default function Hoy() {
                 className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-lg transition-colors"
               >
                 Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal confirmar omitir */}
+      {confirmarOmitirToma && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center px-4"
+          onClick={() => setConfirmarOmitirToma(null)}
+        >
+          <div className="absolute inset-0 bg-black/50" />
+          <div
+            className="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6 border-2 border-red-300"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-sm font-semibold text-red-700 mb-2">Confirmación importante</p>
+            <p className="text-lg font-semibold text-gray-800 mb-1">
+              ¿Seguro que deseas
+            </p>
+            <p className="text-4xl font-black tracking-wide text-center mb-2 bg-gradient-to-r from-orange-500 via-red-500 to-rose-600 bg-clip-text text-transparent">
+              OMITIR
+            </p>
+            <p className="text-lg font-semibold text-gray-800 mb-2">esta dosis?</p>
+            <p className="text-sm text-gray-600 mb-5">
+              {confirmarOmitirToma.medicamentoNombre} · {confirmarOmitirToma.dosis} · {confirmarOmitirToma.horaProgramada}
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={handleOmitir}
+                disabled={marcando !== null}
+                className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-300 text-white font-bold py-3 rounded-lg transition-colors"
+              >
+                {marcando !== null ? 'Guardando...' : 'Sí, OMITIR'}
+              </button>
+              <button
+                onClick={() => setConfirmarOmitirToma(null)}
+                disabled={marcando !== null}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-3 rounded-lg transition-colors"
+              >
+                No, volver
               </button>
             </div>
           </div>
