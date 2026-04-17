@@ -1,0 +1,228 @@
+
+<div id="erd" style="padding: 1rem 0"></div>
+<script type="module">
+import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+await document.fonts.ready;
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  fontFamily: '"Anthropic Sans", sans-serif',
+  themeVariables: {
+    darkMode: dark,
+    fontSize: '13px',
+    fontFamily: '"Anthropic Sans", sans-serif',
+    lineColor: dark ? '#9c9a92' : '#73726c',
+    textColor: dark ? '#c2c0b6' : '#3d3d3a',
+    primaryColor: dark ? '#2a2a28' : '#f1efe8',
+    primaryBorderColor: dark ? '#5f5e5a' : '#b4b2a9',
+  },
+});
+
+const diagram = `erDiagram
+  usuarios {
+    uuid id PK
+    string nombre
+    string apellidos
+    string email
+    string password_hash
+    enum rol
+    boolean activo
+    timestamp created_at
+  }
+
+  roles_catalogo {
+    uuid id PK
+    string nombre
+    string descripcion
+  }
+
+  permisos {
+    uuid id PK
+    uuid rol_id FK
+    string modulo
+    boolean puede_ver
+    boolean puede_crear
+    boolean puede_editar
+    boolean puede_eliminar
+  }
+
+  sesiones {
+    uuid id PK
+    uuid usuario_id FK
+    string ip
+    string dispositivo
+    timestamp inicio
+    timestamp fin
+  }
+
+  clientes {
+    uuid id PK
+    string nombre
+    string apellidos
+    string telefono
+    string email
+    string rfc
+    string domicilio
+    string notas_internas
+    timestamp created_at
+  }
+
+  tipo_caso {
+    uuid id PK
+    string nombre
+    string descripcion
+  }
+
+  etapas_catalogo {
+    uuid id PK
+    uuid tipo_caso_id FK
+    string nombre
+    int orden
+    string descripcion
+  }
+
+  expedientes {
+    uuid id PK
+    string numero
+    uuid cliente_id FK
+    uuid tipo_caso_id FK
+    uuid titular_id FK
+    uuid etapa_actual_id FK
+    enum estado
+    date fecha_apertura
+    date fecha_cierre
+    timestamp created_at
+  }
+
+  expediente_colaboradores {
+    uuid id PK
+    uuid expediente_id FK
+    uuid usuario_id FK
+    boolean puede_subir_docs
+    timestamp asignado_at
+  }
+
+  historial_expediente {
+    uuid id PK
+    uuid expediente_id FK
+    uuid usuario_id FK
+    uuid etapa_id FK
+    string descripcion
+    boolean visible_cliente
+    timestamp created_at
+  }
+
+  documentos {
+    uuid id PK
+    uuid expediente_id FK
+    uuid subido_por FK
+    uuid verificado_por FK
+    string nombre
+    enum tipo
+    enum estado
+    string onedrive_id
+    string ruta_storage
+    timestamp created_at
+  }
+
+  versiones_documento {
+    uuid id PK
+    uuid documento_id FK
+    uuid usuario_id FK
+    int numero_version
+    string onedrive_version_id
+    timestamp created_at
+  }
+
+  eventos {
+    uuid id PK
+    uuid expediente_id FK
+    uuid creado_por FK
+    string titulo
+    enum tipo
+    enum urgencia
+    datetime fecha_evento
+    boolean confirmado
+    int veces_pospuesto
+    timestamp created_at
+  }
+
+  alertas {
+    uuid id PK
+    uuid evento_id FK
+    uuid confirmado_por FK
+    enum nivel
+    datetime fecha_envio
+    timestamp confirmado_at
+  }
+
+  accesos_legalhub {
+    uuid id PK
+    uuid cliente_id FK
+    uuid expediente_id FK
+    string username
+    string password_hash
+    boolean primer_acceso
+    timestamp created_at
+  }
+
+  usuarios ||--o{ sesiones : registra
+  usuarios ||--o{ expediente_colaboradores : participa
+  usuarios ||--o{ historial_expediente : redacta
+  usuarios ||--o{ documentos : sube
+  usuarios ||--o{ documentos : verifica
+  usuarios ||--o{ versiones_documento : modifica
+  usuarios ||--o{ eventos : crea
+  usuarios ||--o{ alertas : confirma
+
+  roles_catalogo ||--o{ permisos : define
+  roles_catalogo ||--o{ usuarios : asigna
+
+  clientes ||--o{ expedientes : tiene
+  clientes ||--o{ accesos_legalhub : accede
+
+  tipo_caso ||--o{ etapas_catalogo : contiene
+  tipo_caso ||--o{ expedientes : clasifica
+
+  etapas_catalogo ||--o{ expedientes : etapa_actual
+  etapas_catalogo ||--o{ historial_expediente : registra
+
+  expedientes ||--o{ expediente_colaboradores : tiene
+  expedientes ||--o{ historial_expediente : acumula
+  expedientes ||--o{ documentos : agrupa
+  expedientes ||--o{ eventos : agenda
+  expedientes ||--o{ accesos_legalhub : genera
+
+  documentos ||--o{ versiones_documento : versiona
+
+  eventos ||--o{ alertas : dispara
+`;
+
+const { svg } = await mermaid.render('erd-svg', diagram);
+document.getElementById('erd').innerHTML = svg;
+
+document.querySelectorAll('#erd svg .node').forEach(node => {
+  const firstPath = node.querySelector('path[d]');
+  if (!firstPath) return;
+  const d = firstPath.getAttribute('d');
+  const nums = d.match(/-?[\d.]+/g)?.map(Number);
+  if (!nums || nums.length < 8) return;
+  const xs = [nums[0], nums[2], nums[4], nums[6]];
+  const ys = [nums[1], nums[3], nums[5], nums[7]];
+  const x = Math.min(...xs), y = Math.min(...ys);
+  const w = Math.max(...xs) - x, h = Math.max(...ys) - y;
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('x', x); rect.setAttribute('y', y);
+  rect.setAttribute('width', w); rect.setAttribute('height', h);
+  rect.setAttribute('rx', '8');
+  for (const a of ['fill', 'stroke', 'stroke-width', 'class', 'style']) {
+    if (firstPath.hasAttribute(a)) rect.setAttribute(a, firstPath.getAttribute(a));
+  }
+  firstPath.replaceWith(rect);
+});
+
+document.querySelectorAll('#erd svg .row-rect-odd path, #erd svg .row-rect-even path').forEach(p => {
+  p.setAttribute('stroke', 'none');
+});
+</script>

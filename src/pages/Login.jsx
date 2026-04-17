@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
-import { doc, setDoc } from 'firebase/firestore'
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { auth, db } from '../services/firebase' // Asegúrate de exportar 'db'
 import { useNavigate } from 'react-router-dom'
 
@@ -73,7 +73,7 @@ export default function Login() {
         await setDoc(doc(db, 'usuarios', credencial.user.uid), {
           nombre: nombreLimpio,
           email: emailLimpio,
-          fechaRegistro: new Date().toISOString(),
+          fechaRegistro: serverTimestamp(),
           rol: 'paciente' // Útil si después quieres agregar perfiles médicos
         })
       } else {

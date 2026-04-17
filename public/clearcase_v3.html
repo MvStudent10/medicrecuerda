@@ -1,0 +1,387 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+.app{display:flex;height:640px;border-radius:var(--border-radius-lg);overflow:hidden;border:0.5px solid var(--color-border-tertiary);font-family:var(--font-sans);}
+.sidebar{width:210px;background:#1a1a2e;display:flex;flex-direction:column;padding:16px 0;flex-shrink:0;}
+.logo{padding:0 16px 16px;border-bottom:1px solid rgba(255,255,255,0.08);margin-bottom:8px;}
+.logo-title{font-size:16px;font-weight:500;color:#fff;}
+.logo-sub{font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;font-size:13px;color:rgba(255,255,255,0.55);transition:all 0.15s;position:relative;}
+.nav-item:hover{color:#fff;background:rgba(255,255,255,0.06);}
+.nav-item.active{color:#fff;background:rgba(99,153,255,0.18);}
+.nav-item.active::before{content:'';position:absolute;left:0;top:4px;bottom:4px;width:3px;background:#6399ff;border-radius:0 3px 3px 0;}
+.nav-badge{margin-left:auto;background:#e24b4a;color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:500;}
+.nav-icon{font-size:15px;width:18px;text-align:center;}
+.main{flex:1;overflow-y:auto;background:var(--color-background-tertiary);padding:20px;display:flex;flex-direction:column;gap:16px;}
+.page{display:none;flex-direction:column;gap:16px;}
+.page.active{display:flex;}
+.page-header{display:flex;align-items:center;justify-content:space-between;}
+.page-title{font-size:16px;font-weight:500;color:var(--color-text-primary);}
+.btn{padding:7px 14px;border-radius:var(--border-radius-md);font-size:12px;font-weight:500;cursor:pointer;border:none;transition:all 0.15s;}
+.btn-primary{background:#6399ff;color:#fff;}
+.btn-primary:hover{background:#4d84ff;}
+.btn-sm{padding:4px 10px;font-size:11px;}
+.cards-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}
+.metric{border-radius:var(--border-radius-md);padding:14px;color:#fff;}
+.metric-bg-blue{background:linear-gradient(135deg,#185FA5,#378ADD);}
+.metric-bg-green{background:linear-gradient(135deg,#3B6D11,#639922);}
+.metric-bg-red{background:linear-gradient(135deg,#A32D2D,#e24b4a);}
+.metric-bg-purple{background:linear-gradient(135deg,#534AB7,#7F77DD);}
+.metric-label{font-size:11px;opacity:0.8;margin-bottom:4px;}
+.metric-value{font-size:26px;font-weight:500;}
+.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:14px 16px;}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.card-title{font-size:13px;font-weight:500;color:var(--color-text-primary);}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;color:var(--color-text-secondary);font-weight:400;padding:6px 8px;border-bottom:0.5px solid var(--color-border-tertiary);font-size:11px;text-transform:uppercase;letter-spacing:0.5px;}
+td{padding:10px 8px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary);}
+tr:last-child td{border-bottom:none;}
+tr.clickable:hover td{background:var(--color-background-secondary);cursor:pointer;}
+.badge{display:inline-block;font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500;}
+.badge-blue{background:#E6F1FB;color:#185FA5;}
+.badge-green{background:#EAF3DE;color:#3B6D11;}
+.badge-amber{background:#FAEEDA;color:#854F0B;}
+.badge-red{background:#FCEBEB;color:#A32D2D;}
+.badge-purple{background:#EEEDFE;color:#534AB7;}
+.stage-bar{display:flex;gap:3px;align-items:center;}
+.stage{height:6px;flex:1;border-radius:3px;background:var(--color-background-secondary);}
+.stage.done{background:#639922;}
+.stage.active{background:#378ADD;}
+.avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:500;flex-shrink:0;}
+.av-blue{background:#E6F1FB;color:#185FA5;}
+.av-teal{background:#E1F5EE;color:#0F6E56;}
+.av-amber{background:#FAEEDA;color:#854F0B;}
+.av-purple{background:#EEEDFE;color:#534AB7;}
+.av-red{background:#FCEBEB;color:#A32D2D;}
+.exp-row{display:flex;align-items:center;gap:12px;padding:10px 8px;border-radius:var(--border-radius-md);cursor:pointer;transition:background 0.1s;}
+.exp-row:hover{background:var(--color-background-secondary);}
+.exp-name{font-size:13px;font-weight:500;color:var(--color-text-primary);}
+.exp-sub{font-size:11px;color:var(--color-text-secondary);}
+.detail-panel{background:var(--color-background-secondary);border-radius:var(--border-radius-lg);padding:14px;border-left:3px solid #378ADD;}
+.detail-title{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:8px;}
+.timeline{display:flex;flex-direction:column;gap:0;}
+.tl-item{display:flex;gap:12px;padding:8px 0;position:relative;}
+.tl-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.tl-dot-done{background:#639922;}
+.tl-dot-active{background:#378ADD;box-shadow:0 0 0 3px rgba(55,138,221,0.2);}
+.tl-dot-pending{background:var(--color-border-secondary);}
+.tl-line{position:absolute;left:4px;top:18px;bottom:-8px;width:1.5px;background:var(--color-border-tertiary);}
+.tl-label{font-size:12px;font-weight:500;color:var(--color-text-primary);}
+.tl-desc{font-size:11px;color:var(--color-text-secondary);}
+.doc-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--border-radius-md);background:var(--color-background-secondary);margin-bottom:6px;cursor:pointer;transition:background 0.1s;}
+.doc-item:hover{background:var(--color-background-tertiary);}
+.doc-icon{width:34px;height:34px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;flex-shrink:0;}
+.di-pdf{background:#FCEBEB;color:#A32D2D;}
+.di-img{background:#E1F5EE;color:#0F6E56;}
+.di-word{background:#E6F1FB;color:#185FA5;}
+.doc-name{font-size:12px;font-weight:500;color:var(--color-text-primary);}
+.doc-meta{font-size:11px;color:var(--color-text-secondary);}
+
+/* ALERTAS — colores sólidos hardcodeados para máximo contraste */
+.alert-item{display:flex;align-items:flex-start;gap:12px;padding:14px;border-radius:var(--border-radius-md);margin-bottom:10px;border-left:4px solid;}
+.al-critico{background:#fff0f0;border-color:#e24b4a;}
+.al-urgente{background:#fff8ec;border-color:#EF9F27;}
+.al-normal{background:#eef5ff;border-color:#378ADD;}
+.al-icon{font-size:20px;flex-shrink:0;line-height:1;}
+.al-body{flex:1;}
+.al-title{font-size:13px;font-weight:500;color:#1a1a1a;}
+.al-sub{font-size:12px;color:#444;margin-top:3px;line-height:1.4;}
+.al-note-red{font-size:11px;color:#c0392b;margin-top:4px;font-weight:500;}
+.al-note-amber{font-size:11px;color:#b7600a;margin-top:4px;font-weight:500;}
+.al-note-blue{font-size:11px;color:#1a5fa8;margin-top:4px;font-weight:500;}
+.al-actions{display:flex;gap:8px;margin-top:10px;}
+.btn-confirm-red{padding:5px 14px;border-radius:var(--border-radius-md);font-size:12px;font-weight:500;cursor:pointer;border:none;background:#e24b4a;color:#fff;transition:all 0.15s;}
+.btn-confirm-red:hover{background:#c0392b;}
+.btn-confirm-red:disabled{background:#ccc;color:#888;cursor:default;}
+.btn-confirm-amber{padding:5px 14px;border-radius:var(--border-radius-md);font-size:12px;font-weight:500;cursor:pointer;border:none;background:#EF9F27;color:#fff;transition:all 0.15s;}
+.btn-confirm-amber:hover{background:#b7600a;}
+.btn-confirm-amber:disabled{background:#ccc;color:#888;cursor:default;}
+.btn-confirm-blue{padding:5px 14px;border-radius:var(--border-radius-md);font-size:12px;font-weight:500;cursor:pointer;border:none;background:#378ADD;color:#fff;transition:all 0.15s;}
+.btn-confirm-blue:hover{background:#185FA5;}
+.btn-confirm-blue:disabled{background:#ccc;color:#888;cursor:default;}
+.btn-snooze{padding:5px 14px;border-radius:var(--border-radius-md);font-size:12px;font-weight:500;cursor:pointer;border:1px solid #bbb;background:#fff;color:#444;transition:all 0.15s;}
+.btn-snooze:hover{background:#f5f5f5;}
+
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;}
+.cal-dh{font-size:11px;color:var(--color-text-secondary);text-align:center;padding:4px;font-weight:500;}
+.cal-day{min-height:58px;background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:5px;cursor:pointer;transition:background 0.1s;}
+.cal-day:hover{background:var(--color-background-primary);border:0.5px solid var(--color-border-secondary);}
+.cal-day.today{border:2px solid #378ADD;background:var(--color-background-primary);}
+.cal-num{font-size:11px;color:var(--color-text-secondary);margin-bottom:3px;}
+.cal-day.today .cal-num{color:#185FA5;font-weight:500;}
+.cal-ev{font-size:10px;padding:2px 5px;border-radius:3px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cev-red{background:#FCEBEB;color:#A32D2D;}
+.cev-amber{background:#FAEEDA;color:#854F0B;}
+.cev-blue{background:#E6F1FB;color:#185FA5;}
+.cev-green{background:#EAF3DE;color:#3B6D11;}
+.search-bar{display:flex;gap:8px;align-items:center;}
+.search-input{flex:1;padding:8px 12px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);font-size:13px;color:var(--color-text-primary);outline:none;}
+.search-input:focus{border-color:#378ADD;}
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;}
+.filter-btn{padding:5px 12px;border-radius:20px;font-size:12px;cursor:pointer;border:0.5px solid var(--color-border-secondary);background:transparent;color:var(--color-text-secondary);transition:all 0.15s;}
+.filter-btn.on{background:#378ADD;color:#fff;border-color:#378ADD;}
+.user-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--color-border-tertiary);}
+.user-row:last-child{border-bottom:none;}
+.user-info{flex:1;}
+.user-name{font-size:13px;font-weight:500;color:var(--color-text-primary);}
+.user-sub{font-size:11px;color:var(--color-text-secondary);}
+.perm-dots{display:flex;gap:4px;}
+.perm-dot{width:8px;height:8px;border-radius:50%;}
+.dot-on{background:#639922;}
+.dot-off{background:var(--color-border-secondary);}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.mini-stat{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px;display:flex;align-items:center;gap:10px;}
+.ms-icon{font-size:20px;}
+.ms-label{font-size:11px;color:var(--color-text-secondary);}
+.ms-value{font-size:15px;font-weight:500;color:var(--color-text-primary);}
+.progress-bar{height:6px;border-radius:3px;background:var(--color-background-secondary);overflow:hidden;margin-top:6px;}
+.progress-fill{height:100%;border-radius:3px;transition:width 0.4s;}
+</style>
+
+<div class="app">
+<div class="sidebar">
+  <div class="logo">
+    <div class="logo-title">⚖ ClearCase</div>
+    <div class="logo-sub">Ríos & Asociados</div>
+  </div>
+  <div class="nav-item" onclick="nav('dashboard',this)"><span class="nav-icon">▦</span> Dashboard</div>
+  <div class="nav-item" onclick="nav('expedientes',this)"><span class="nav-icon">📁</span> Expedientes</div>
+  <div class="nav-item" onclick="nav('documentos',this)"><span class="nav-icon">📄</span> Documentos</div>
+  <div class="nav-item" onclick="nav('agenda',this)"><span class="nav-icon">📅</span> Agenda</div>
+  <div class="nav-item active" onclick="nav('alertas',this)"><span class="nav-icon">🔔</span> Alertas <span class="nav-badge" id="alert-count">3</span></div>
+  <div class="nav-item" onclick="nav('usuarios',this)"><span class="nav-icon">👥</span> Usuarios</div>
+</div>
+
+<div class="main">
+
+<!-- DASHBOARD -->
+<div class="page" id="page-dashboard">
+  <div class="page-header"><div class="page-title">Panel general</div><button class="btn btn-primary btn-sm">+ Nuevo expediente</button></div>
+  <div class="cards-row">
+    <div class="metric metric-bg-blue"><div class="metric-label">Casos activos</div><div class="metric-value">24</div></div>
+    <div class="metric metric-bg-green"><div class="metric-label">Cerrados este mes</div><div class="metric-value">8</div></div>
+    <div class="metric metric-bg-red"><div class="metric-label">Alertas críticas</div><div class="metric-value">3</div></div>
+    <div class="metric metric-bg-purple"><div class="metric-label">Docs digitalizados</div><div class="metric-value">1,204</div></div>
+  </div>
+  <div class="two-col">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Casos por tipo</span></div>
+      <div class="mini-stat"><span class="ms-icon">👨‍👩‍👧</span><div style="flex:1"><div class="ms-label">Familiar</div><div class="ms-value">9 casos</div><div class="progress-bar"><div class="progress-fill" style="width:75%;background:#7F77DD;"></div></div></div></div>
+      <div style="height:6px"></div>
+      <div class="mini-stat"><span class="ms-icon">📜</span><div style="flex:1"><div class="ms-label">Civil</div><div class="ms-value">7 casos</div><div class="progress-bar"><div class="progress-fill" style="width:58%;background:#378ADD;"></div></div></div></div>
+      <div style="height:6px"></div>
+      <div class="mini-stat"><span class="ms-icon">💼</span><div style="flex:1"><div class="ms-label">Mercantil</div><div class="ms-value">5 casos</div><div class="progress-bar"><div class="progress-fill" style="width:42%;background:#639922;"></div></div></div></div>
+      <div style="height:6px"></div>
+      <div class="mini-stat"><span class="ms-icon">⚖</span><div style="flex:1"><div class="ms-label">Penal</div><div class="ms-value">3 casos</div><div class="progress-bar"><div class="progress-fill" style="width:25%;background:#e24b4a;"></div></div></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Actividad reciente</span></div>
+      <div class="timeline">
+        <div class="tl-item"><div class="tl-dot tl-dot-active"></div><div class="tl-line"></div><div><div class="tl-label">Expediente actualizado</div><div class="tl-desc">González — etapa 3 · hace 20 min</div></div></div>
+        <div class="tl-item"><div class="tl-dot tl-dot-done"></div><div class="tl-line"></div><div><div class="tl-label">Documento subido</div><div class="tl-desc">Escrito de pruebas · Lic. Torres · hace 1h</div></div></div>
+        <div class="tl-item"><div class="tl-dot tl-dot-done"></div><div class="tl-line"></div><div><div class="tl-label">Cita agendada</div><div class="tl-desc">Audiencia Paredes · 19 mar · hace 2h</div></div></div>
+        <div class="tl-item"><div class="tl-dot tl-dot-done"></div><div><div class="tl-label">Cliente registrado</div><div class="tl-desc">Laura Paredes · Exp-2024-015 · ayer</div></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Casos urgentes</span><span class="badge badge-red">2 requieren atención</span></div>
+    <table>
+      <tr><th>Cliente</th><th>Tipo</th><th>Abogado</th><th>Progreso</th><th>Estado</th></tr>
+      <tr class="clickable" onclick="nav('expedientes',document.querySelectorAll('.nav-item')[1])"><td>María González</td><td>Familiar</td><td>Lic. Ríos</td><td><div class="stage-bar"><div class="stage done"></div><div class="stage done"></div><div class="stage active"></div><div class="stage"></div><div class="stage"></div></div></td><td><span class="badge badge-red">Audiencia hoy</span></td></tr>
+      <tr class="clickable" onclick="nav('expedientes',document.querySelectorAll('.nav-item')[1])"><td>Laura Paredes</td><td>Familiar</td><td>Lic. Ríos</td><td><div class="stage-bar"><div class="stage done"></div><div class="stage active"></div><div class="stage"></div><div class="stage"></div><div class="stage"></div></div></td><td><span class="badge badge-amber">Plazo próximo</span></td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- EXPEDIENTES -->
+<div class="page" id="page-expedientes">
+  <div class="page-header"><div class="page-title">Expedientes</div><button class="btn btn-primary btn-sm">+ Nuevo</button></div>
+  <div class="search-bar"><input class="search-input" placeholder="Buscar por cliente, expediente o tipo..." oninput="filterExp(this.value)"></div>
+  <div class="filter-row" id="filters">
+    <button class="filter-btn on" onclick="setFilter(this)">Todos (24)</button>
+    <button class="filter-btn" onclick="setFilter(this)">En proceso</button>
+    <button class="filter-btn" onclick="setFilter(this)">Urgentes</button>
+    <button class="filter-btn" onclick="setFilter(this)">Cerrados</button>
+  </div>
+  <div class="card" id="exp-list">
+    <div class="exp-row" onclick="showDetail('mg')"><div class="avatar av-red">MG</div><div style="flex:1"><div class="exp-name">María González Ruiz</div><div class="exp-sub">EXP-2024-031 · Divorcio · Lic. Ríos</div><div class="stage-bar" style="margin-top:4px;max-width:120px;"><div class="stage done"></div><div class="stage done"></div><div class="stage active"></div><div class="stage"></div><div class="stage"></div></div></div><span class="badge badge-red">Audiencia hoy</span></div>
+    <div class="exp-row" onclick="showDetail('cm')"><div class="avatar av-amber">CM</div><div style="flex:1"><div class="exp-name">Carlos Mendoza Pérez</div><div class="exp-sub">EXP-2024-028 · Contrato mercantil · Lic. Torres</div><div class="stage-bar" style="margin-top:4px;max-width:120px;"><div class="stage done"></div><div class="stage done"></div><div class="stage done"></div><div class="stage done"></div><div class="stage active"></div></div></div><span class="badge badge-amber">Por cerrar</span></div>
+    <div class="exp-row" onclick="showDetail('gi')"><div class="avatar av-blue">GI</div><div style="flex:1"><div class="exp-name">Grupo Inverta S.A. de C.V.</div><div class="exp-sub">EXP-2024-019 · Demanda civil · Lic. Ríos</div><div class="stage-bar" style="margin-top:4px;max-width:120px;"><div class="stage done"></div><div class="stage active"></div><div class="stage"></div><div class="stage"></div><div class="stage"></div></div></div><span class="badge badge-blue">En proceso</span></div>
+    <div class="exp-row" onclick="showDetail('lp')"><div class="avatar av-purple">LP</div><div style="flex:1"><div class="exp-name">Laura Paredes Díaz</div><div class="exp-sub">EXP-2024-015 · Pensión alimenticia · Lic. Ríos</div><div class="stage-bar" style="margin-top:4px;max-width:120px;"><div class="stage done"></div><div class="stage active"></div><div class="stage"></div><div class="stage"></div><div class="stage"></div></div></div><span class="badge badge-amber">Plazo próximo</span></div>
+    <div class="exp-row"><div class="avatar av-teal">RS</div><div style="flex:1"><div class="exp-name">Roberto Salinas Mora</div><div class="exp-sub">EXP-2024-009 · Penal · Lic. Núñez</div><div class="stage-bar" style="margin-top:4px;max-width:120px;"><div class="stage done"></div><div class="stage done"></div><div class="stage done"></div><div class="stage done"></div><div class="stage done"></div></div></div><span class="badge badge-green">Cerrado</span></div>
+  </div>
+  <div class="detail-panel" id="detail-panel" style="display:none;"><div id="detail-content"></div></div>
+</div>
+
+<!-- DOCUMENTOS -->
+<div class="page" id="page-documentos">
+  <div class="page-header"><div class="page-title">Documentos</div><button class="btn btn-primary btn-sm">+ Subir documento</button></div>
+  <div class="filter-row">
+    <button class="filter-btn on" onclick="setFilter(this)">Todos</button>
+    <button class="filter-btn" onclick="setFilter(this)">PDF</button>
+    <button class="filter-btn" onclick="setFilter(this)">Imágenes</button>
+    <button class="filter-btn" onclick="setFilter(this)">Pendientes</button>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Documentos recientes</span><span style="font-size:11px;color:var(--color-text-secondary)">EXP-2024-031 · González</span></div>
+    <div class="doc-item" onclick="docClick(this,'Acta de matrimonio.pdf')"><div class="doc-icon di-pdf">PDF</div><div class="doc-info"><div class="doc-name">Acta de matrimonio.pdf</div><div class="doc-meta">Subido 10 mar 2026 · Lic. Ríos · 1.2 MB</div></div><span class="badge badge-green">Verificado</span></div>
+    <div class="doc-item" onclick="docClick(this,'Demanda inicial firmada.pdf')"><div class="doc-icon di-pdf">PDF</div><div class="doc-info"><div class="doc-name">Demanda inicial firmada.pdf</div><div class="doc-meta">Subido 8 mar 2026 · Lic. Ríos · 890 KB</div></div><span class="badge badge-green">Verificado</span></div>
+    <div class="doc-item" onclick="docClick(this,'Escrito de pruebas.pdf')"><div class="doc-icon di-pdf">PDF</div><div class="doc-info"><div class="doc-name">Escrito de pruebas.pdf</div><div class="doc-meta">Subido 5 mar 2026 · Lic. Torres · 2.1 MB</div></div><span class="badge badge-amber">Pendiente revisión</span></div>
+    <div class="doc-item" onclick="docClick(this,'Identificación oficial.jpg')"><div class="doc-icon di-img">IMG</div><div class="doc-info"><div class="doc-name">Identificación oficial (scan).jpg</div><div class="doc-meta">Subido 1 mar 2026 · Recepción · 450 KB</div></div><span class="badge badge-green">Verificado</span></div>
+    <div class="doc-item" onclick="docClick(this,'Poder notarial.docx')"><div class="doc-icon di-word">DOC</div><div class="doc-info"><div class="doc-name">Poder notarial.docx</div><div class="doc-meta">Subido 28 feb 2026 · Lic. Ríos · 320 KB</div></div><span class="badge badge-red">Falta firma</span></div>
+  </div>
+  <div id="doc-preview" style="display:none;" class="detail-panel"><div id="doc-preview-content"></div></div>
+</div>
+
+<!-- AGENDA -->
+<div class="page" id="page-agenda">
+  <div class="page-header"><div class="page-title">Agenda</div><button class="btn btn-primary btn-sm">+ Nueva cita</button></div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Marzo 2026</span></div>
+    <div class="cal-grid">
+      <div class="cal-dh">Lun</div><div class="cal-dh">Mar</div><div class="cal-dh">Mié</div><div class="cal-dh">Jue</div><div class="cal-dh">Vie</div><div class="cal-dh">Sáb</div><div class="cal-dh">Dom</div>
+      <div class="cal-day" onclick="calClick('9 mar','Sin eventos')"><div class="cal-num">9</div></div>
+      <div class="cal-day" onclick="calClick('10 mar','Reunión Grupo Inverta · 11:00 AM')"><div class="cal-num">10</div><div class="cal-ev cev-blue">Reunión Inverta</div></div>
+      <div class="cal-day" onclick="calClick('11 mar','Sin eventos')"><div class="cal-num">11</div></div>
+      <div class="cal-day today" onclick="calClick('12 mar — HOY','Audiencia González · Juzgado 4to Civil · 10:00 AM\nAlerta CRÍTICA activa')"><div class="cal-num">12</div><div class="cal-ev cev-red">Audiencia González</div></div>
+      <div class="cal-day" onclick="calClick('13 mar','Entrega de escrito · Caso Mendoza · Plazo límite 5:00 PM')"><div class="cal-num">13</div><div class="cal-ev cev-amber">Entrega escrito</div></div>
+      <div class="cal-day" onclick="calClick('14 mar','Sin eventos')"><div class="cal-num">14</div></div>
+      <div class="cal-day" onclick="calClick('15 mar','Sin eventos')"><div class="cal-num">15</div></div>
+      <div class="cal-day" onclick="calClick('16 mar','Sin eventos')"><div class="cal-num">16</div></div>
+      <div class="cal-day" onclick="calClick('17 mar','Cita con Carlos Mendoza · 3:00 PM · Revisión final')"><div class="cal-num">17</div><div class="cal-ev cev-amber">Cita Mendoza</div></div>
+      <div class="cal-day" onclick="calClick('18 mar','Sin eventos')"><div class="cal-num">18</div></div>
+      <div class="cal-day" onclick="calClick('19 mar','Audiencia Laura Paredes · Juzgado Familiar · 9:00 AM\n3er aviso enviado')"><div class="cal-num">19</div><div class="cal-ev cev-red">Audiencia Paredes</div></div>
+      <div class="cal-day" onclick="calClick('20 mar','Sin eventos')"><div class="cal-num">20</div></div>
+      <div class="cal-day" onclick="calClick('21 mar','Sin eventos')"><div class="cal-num">21</div></div>
+      <div class="cal-day" onclick="calClick('22 mar','Junta interna mensual · 10:00 AM')"><div class="cal-num">22</div><div class="cal-ev cev-green">Junta interna</div></div>
+    </div>
+  </div>
+  <div class="card" id="cal-detail" style="display:none;">
+    <div class="card-header"><span class="card-title" id="cal-detail-title"></span></div>
+    <div id="cal-detail-body" style="font-size:13px;color:var(--color-text-secondary);white-space:pre-line;"></div>
+  </div>
+</div>
+
+<!-- ALERTAS — abre por defecto -->
+<div class="page active" id="page-alertas">
+  <div class="page-header">
+    <div class="page-title">Centro de alertas</div>
+    <span class="badge badge-red" id="alert-header-count">3 sin confirmar</span>
+  </div>
+  <div class="card">
+
+    <div class="alert-item al-critico" id="al1">
+      <span class="al-icon">🚨</span>
+      <div class="al-body">
+        <div class="al-title">CRÍTICO — Audiencia HOY · 10:00 AM</div>
+        <div class="al-sub">María González Ruiz · Juzgado 4to Civil · EXP-2024-031</div>
+        <div class="al-note-red">Esta alerta permanece visible hasta ser confirmada</div>
+        <div class="al-actions">
+          <button class="btn-confirm-red" onclick="confirmAlert('al1',this)">Confirmar asistencia</button>
+          <button class="btn-snooze" onclick="snoozeAlert('al1')">Posponer 1h</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert-item al-urgente" id="al2">
+      <span class="al-icon">⚠️</span>
+      <div class="al-body">
+        <div class="al-title">URGENTE — Plazo mañana</div>
+        <div class="al-sub">Entrega de escrito · Carlos Mendoza · EXP-2024-028</div>
+        <div class="al-note-amber">2do aviso · 1er aviso enviado hace 3 días · Quedan 18 horas</div>
+        <div class="al-actions">
+          <button class="btn-confirm-amber" onclick="confirmAlert('al2',this)">Confirmar</button>
+          <button class="btn-snooze" onclick="snoozeAlert('al2')">Posponer 2h</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert-item al-normal" id="al3">
+      <span class="al-icon">📅</span>
+      <div class="al-body">
+        <div class="al-title">RECORDATORIO — En 7 días</div>
+        <div class="al-sub">Audiencia Laura Paredes · Juzgado Familiar · 19 mar · 9:00 AM</div>
+        <div class="al-note-blue">1er aviso de 4 · Próximo aviso en 4 días</div>
+        <div class="al-actions">
+          <button class="btn-confirm-blue" onclick="confirmAlert('al3',this)">Confirmar</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- USUARIOS -->
+<div class="page" id="page-usuarios">
+  <div class="page-header"><div class="page-title">Usuarios y permisos</div><button class="btn btn-primary btn-sm">+ Agregar usuario</button></div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">Equipo del despacho</span><span style="font-size:11px;color:var(--color-text-secondary)">Ver · Editar · Eliminar · Admin</span></div>
+    <div class="user-row"><div class="avatar av-blue">AR</div><div class="user-info"><div class="user-name">Lic. Arturo Ríos Garza</div><div class="user-sub">Socio principal · Último acceso: hoy 9:14 am</div></div><span class="badge badge-purple">Administrador</span><div class="perm-dots"><div class="perm-dot dot-on"></div><div class="perm-dot dot-on"></div><div class="perm-dot dot-on"></div><div class="perm-dot dot-on"></div></div></div>
+    <div class="user-row"><div class="avatar av-teal">MT</div><div class="user-info"><div class="user-name">Lic. Mariana Torres</div><div class="user-sub">Abogada asociada · Último acceso: hoy 8:50 am</div></div><span class="badge badge-blue">Abogado</span><div class="perm-dots"><div class="perm-dot dot-on"></div><div class="perm-dot dot-on"></div><div class="perm-dot dot-on"></div><div class="perm-dot dot-off"></div></div></div>
+    <div class="user-row"><div class="avatar av-amber">JN</div><div class="user-info"><div class="user-name">Lic. Jorge Núñez</div><div class="user-sub">Abogado asociado · Último acceso: ayer</div></div><span class="badge badge-blue">Abogado</span><div class="perm-dots"><div class="perm-dot dot-on"></div><div class="perm-dot dot-on"></div><div class="perm-dot dot-on"></div><div class="perm-dot dot-off"></div></div></div>
+    <div class="user-row"><div class="avatar av-purple">SL</div><div class="user-info"><div class="user-name">Sandra López</div><div class="user-sub">Asistente · Último acceso: hoy 8:20 am</div></div><span class="badge badge-green">Asistente</span><div class="perm-dots"><div class="perm-dot dot-on"></div><div class="perm-dot dot-off"></div><div class="perm-dot dot-off"></div><div class="perm-dot dot-off"></div></div></div>
+    <div class="user-row"><div class="avatar av-teal">RC</div><div class="user-info"><div class="user-name">Rosa Castillo</div><div class="user-sub">Recepcionista · Último acceso: hoy 7:55 am</div></div><span class="badge badge-amber">Recepción</span><div class="perm-dots"><div class="perm-dot dot-on"></div><div class="perm-dot dot-off"></div><div class="perm-dot dot-off"></div><div class="perm-dot dot-off"></div></div></div>
+  </div>
+</div>
+
+</div>
+</div>
+
+<script>
+let alertCount = 3;
+function nav(id, el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  el.classList.add('active');
+}
+function setFilter(el){
+  el.closest('.filter-row').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+}
+const details = {
+  mg:`<div class="detail-title">María González Ruiz — EXP-2024-031</div><div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:10px;">Divorcio · Lic. Ríos · Abierto 1 ene 2026</div><div class="timeline"><div class="tl-item"><div class="tl-dot tl-dot-done"></div><div class="tl-line"></div><div><div class="tl-label">Apertura del caso</div><div class="tl-desc">Documentos iniciales recibidos · ene 2026</div></div></div><div class="tl-item"><div class="tl-dot tl-dot-done"></div><div class="tl-line"></div><div><div class="tl-label">Demanda presentada</div><div class="tl-desc">Firmada y presentada · feb 2026</div></div></div><div class="tl-item"><div class="tl-dot tl-dot-active"></div><div class="tl-line"></div><div><div class="tl-label">Audiencia inicial — HOY</div><div class="tl-desc">Juzgado 4to Civil · 10:00 AM</div></div></div><div class="tl-item"><div class="tl-dot tl-dot-pending"></div><div class="tl-line"></div><div><div class="tl-label">Resolución</div><div class="tl-desc">Pendiente</div></div></div><div class="tl-item"><div class="tl-dot tl-dot-pending"></div><div><div class="tl-label">Cierre</div><div class="tl-desc">Pendiente</div></div></div></div>`,
+  cm:`<div class="detail-title">Carlos Mendoza Pérez — EXP-2024-028</div><div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:10px;">Contrato mercantil · Lic. Torres · Etapa 5 de 5</div><div class="timeline"><div class="tl-item"><div class="tl-dot tl-dot-done"></div><div class="tl-line"></div><div><div class="tl-label">Apertura</div><div class="tl-desc">Completado · dic 2025</div></div></div><div class="tl-item"><div class="tl-dot tl-dot-done"></div><div class="tl-line"></div><div><div class="tl-label">Revisión contractual</div><div class="tl-desc">Completado · ene 2026</div></div></div><div class="tl-item"><div class="tl-dot tl-dot-done"></div><div class="tl-line"></div><div><div class="tl-label">Negociación</div><div class="tl-desc">Completado · feb 2026</div></div></div><div class="tl-item"><div class="tl-dot tl-dot-done"></div><div class="tl-line"></div><div><div class="tl-label">Firma de contrato</div><div class="tl-desc">Completado · mar 2026</div></div></div><div class="tl-item"><div class="tl-dot tl-dot-active"></div><div><div class="tl-label">Cierre y archivo</div><div class="tl-desc">En progreso · entrega escrito mañana</div></div></div></div>`,
+  gi:`<div class="detail-title">Grupo Inverta S.A. — EXP-2024-019</div><div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:10px;">Demanda civil · Lic. Ríos · Etapa 2 de 5</div><div class="timeline"><div class="tl-item"><div class="tl-dot tl-dot-done"></div><div class="tl-line"></div><div><div class="tl-label">Apertura</div><div class="tl-desc">Completado · nov 2025</div></div></div><div class="tl-item"><div class="tl-dot tl-dot-active"></div><div class="tl-line"></div><div><div class="tl-label">Preparación de demanda</div><div class="tl-desc">En curso · reunión 10 mar</div></div></div><div class="tl-item"><div class="tl-dot tl-dot-pending"></div><div class="tl-line"></div><div><div class="tl-label">Presentación</div><div class="tl-desc">Pendiente</div></div></div><div class="tl-item"><div class="tl-dot tl-dot-pending"></div><div class="tl-line"></div><div><div class="tl-label">Audiencia</div><div class="tl-desc">Pendiente</div></div></div><div class="tl-item"><div class="tl-dot tl-dot-pending"></div><div><div class="tl-label">Resolución</div><div class="tl-desc">Pendiente</div></div></div></div>`,
+  lp:`<div class="detail-title">Laura Paredes Díaz — EXP-2024-015</div><div style="font-size:12px;color:var(--color-text-secondary);margin-bottom:10px;">Pensión alimenticia · Lic. Ríos · Etapa 2 de 5</div><div class="timeline"><div class="tl-item"><div class="tl-dot tl-dot-done"></div><div class="tl-line"></div><div><div class="tl-label">Apertura</div><div class="tl-desc">Completado · feb 2026</div></div></div><div class="tl-item"><div class="tl-dot tl-dot-active"></div><div class="tl-line"></div><div><div class="tl-label">Recopilación de pruebas</div><div class="tl-desc">En curso · audiencia el 19 mar</div></div></div><div class="tl-item"><div class="tl-dot tl-dot-pending"></div><div class="tl-line"></div><div><div class="tl-label">Audiencia inicial</div><div class="tl-desc">19 mar 2026</div></div></div><div class="tl-item"><div class="tl-dot tl-dot-pending"></div><div class="tl-line"></div><div><div class="tl-label">Resolución</div><div class="tl-desc">Pendiente</div></div></div><div class="tl-item"><div class="tl-dot tl-dot-pending"></div><div><div class="tl-label">Cierre</div><div class="tl-desc">Pendiente</div></div></div></div>`
+};
+function showDetail(id){
+  const p=document.getElementById('detail-panel');
+  const c=document.getElementById('detail-content');
+  if(p.style.display==='none'||c.dataset.id!==id){p.style.display='block';c.innerHTML=details[id];c.dataset.id=id;}
+  else{p.style.display='none';}
+}
+function docClick(el,name){
+  const p=document.getElementById('doc-preview');
+  p.style.display='block';
+  document.getElementById('doc-preview-content').innerHTML=`<div class="detail-title">${name}</div><div style="font-size:12px;color:var(--color-text-secondary);margin-top:4px;">El archivo se abriría en el visor de documentos</div><div style="margin-top:10px;display:flex;gap:8px;"><button class="btn btn-primary btn-sm">Descargar</button><button class="btn btn-sm" style="border:0.5px solid var(--color-border-secondary);">Verificar</button><button class="btn btn-sm" style="border:0.5px solid var(--color-border-secondary);color:var(--color-text-danger);">Eliminar</button></div>`;
+}
+function calClick(day,info){
+  const p=document.getElementById('cal-detail');
+  document.getElementById('cal-detail-title').textContent=day;
+  document.getElementById('cal-detail-body').textContent=info;
+  p.style.display='block';
+}
+function confirmAlert(id,btn){
+  btn.textContent='Confirmado ✓';
+  btn.disabled=true;
+  const el=document.getElementById(id);
+  el.style.opacity='0.5';
+  alertCount--;
+  document.getElementById('alert-count').textContent=alertCount;
+  document.getElementById('alert-header-count').textContent=alertCount+' sin confirmar';
+  if(alertCount===0) document.getElementById('alert-count').style.display='none';
+}
+function snoozeAlert(id){
+  const el=document.getElementById(id);
+  const notes=el.querySelectorAll('[class^="al-note"]');
+  if(notes.length) notes[notes.length-1].textContent='Pospuesto · Vuelve en 1 hora';
+}
+function filterExp(val){
+  val=val.toLowerCase();
+  document.querySelectorAll('.exp-row').forEach(r=>{
+    r.style.display=r.textContent.toLowerCase().includes(val)?'flex':'none';
+  });
+}
+</script>

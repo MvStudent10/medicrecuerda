@@ -113,7 +113,7 @@ export default function Medicamentos() {
       {modalAbierto && (
         <ModalMedicamento
           medicamento={medicamentoEditando}
-          totalMedicamentos={medicamentos.length}
+          medicamentosExistentes={medicamentos}
           onCerrar={handleCerrarModal}
         />
       )}

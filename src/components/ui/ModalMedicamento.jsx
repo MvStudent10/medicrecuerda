@@ -23,9 +23,20 @@ export const COLORES_MEDICAMENTO = [
   { id: 'gris',     bg: 'bg-gray-400',   hex: '#9ca3af' },
 ]
 
-// Asigna color automático basado en índice
-export function getColorAuto(index) {
-  return COLORES_MEDICAMENTO[index % COLORES_MEDICAMENTO.length]
+// Asigna el primer color no usado; si todos están ocupados, regresa al primero
+export function getColorAuto(medicamentosExistentes = []) {
+  const coloresEnUso = new Set(
+    medicamentosExistentes
+      .map((med) => med?.color)
+      .filter(Boolean)
+      .map((color) => color.toLowerCase())
+  )
+
+  const colorLibre = COLORES_MEDICAMENTO.find(
+    (color) => !coloresEnUso.has(color.hex.toLowerCase())
+  )
+
+  return colorLibre || COLORES_MEDICAMENTO[0]
 }
 
 const getFormVacio = () => ({
@@ -39,7 +50,7 @@ const getFormVacio = () => ({
   color: '',
 })
 
-export default function ModalMedicamento({ medicamento, totalMedicamentos = 0, onCerrar }) {
+export default function ModalMedicamento({ medicamento, medicamentosExistentes = [], onCerrar }) {
   const { user } = useAuth()
   const [form, setForm] = useState(getFormVacio())
   const [guardando, setGuardando] = useState(false)
@@ -88,7 +99,7 @@ export default function ModalMedicamento({ medicamento, totalMedicamentos = 0, o
       // Si no eligió color, asignar automáticamente
       const colorFinal = form.color
         ? form.color
-        : getColorAuto(totalMedicamentos).hex
+        : getColorAuto(medicamentosExistentes).hex
 
       const datos = {
         nombre: form.nombre.trim(),
