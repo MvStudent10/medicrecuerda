@@ -25,6 +25,31 @@ async function registrarServiceWorkerFcm() {
   })
 }
 
+function esperarSwActivo(registration, timeoutMs = 12000) {
+  if (registration.active) return Promise.resolve(registration)
+
+  const worker = registration.installing || registration.waiting
+  if (!worker) {
+    return registration.update().then(() => {
+      if (registration.active) return registration
+      throw new Error('El Service Worker de notificaciones no se activó todavía.')
+    })
+  }
+
+  return new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      reject(new Error('Tiempo de espera agotado activando Service Worker de notificaciones.'))
+    }, timeoutMs)
+
+    worker.addEventListener('statechange', () => {
+      if (worker.state === 'activated') {
+        clearTimeout(timeoutId)
+        resolve(registration)
+      }
+    })
+  })
+}
+
 export async function activarPushRecordatorios(uid) {
   if (!uid) throw new Error('Se requiere uid para activar push.')
   if (!VAPID_KEY) throw new Error('Falta VITE_FIREBASE_VAPID_KEY en variables de entorno.')
@@ -36,6 +61,7 @@ export async function activarPushRecordatorios(uid) {
   if (permiso !== 'granted') throw new Error('Permiso de notificaciones denegado.')
 
   const registration = await registrarServiceWorkerFcm()
+  await esperarSwActivo(registration)
   const messaging = getMessaging(app)
 
   const token = await getToken(messaging, {
