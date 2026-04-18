@@ -14,6 +14,20 @@ Este README esta pensado para mover el proyecto a otra computadora e instalar to
 
 Nota: en `functions/package.json` se define `"engines": { "node": "20" }`, por lo que el backend de Cloud Functions requiere Node 20.
 
+### Configurar Node 20 en Windows (recomendado)
+
+Si tu computadora tiene otra version de Node (por ejemplo 22/24), instala NVM for Windows y usa Node 20:
+
+```powershell
+winget install --id CoreyButler.NVMforWindows -e --accept-source-agreements --accept-package-agreements
+nvm install 20.19.5
+nvm use 20.19.5
+node -v
+npm -v
+```
+
+Si `nvm` no se reconoce despues de instalarlo, cierra y abre una terminal nueva.
+
 ## 2. Librerias y versiones
 
 ### Frontend (raiz del proyecto)
@@ -70,11 +84,14 @@ npm ci
 
 ```bash
 cd functions
-npm ci
+npm install
 cd ..
 ```
 
-Recomendacion: usar `npm ci` (en lugar de `npm install`) para instalar exactamente lo bloqueado en `package-lock.json`.
+Recomendacion:
+
+- Usa `npm ci` en la raiz para respetar exactamente `package-lock.json`.
+- En `functions/`, usa `npm ci` solo si `functions/package-lock.json` esta versionado; si no, usa `npm install`.
 
 ## 4. Variables de entorno (.env)
 
@@ -149,6 +166,26 @@ npm run dev
 
 # functions
 cd functions
-npm ci
+npm install
 npm run serve
 ```
+
+## 10. Verificacion post-instalacion (30-60 segundos)
+
+Ejecuta estos comandos para confirmar que el entorno quedo listo:
+
+```bash
+# versiones base
+node -v
+npm -v
+firebase --version
+
+# validacion del proyecto
+npm run build
+```
+
+Resultado esperado:
+
+- `node -v` debe mostrar Node 20.x.
+- `firebase --version` debe responder una version (sin error de comando no reconocido).
+- `npm run build` debe finalizar en exito y generar la carpeta `dist/`.

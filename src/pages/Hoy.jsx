@@ -2,11 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useMedicamentos } from '../hooks/useMedicamentos'
 import { suscribirTomasDelDia, marcarComoTomado, marcarComoOmitido } from '../services/tomas'
-import {
-  activarPushRecordatorios,
-  desactivarPushRecordatorios,
-  escucharPushEnPrimerPlano,
-} from '../services/pushMessaging'
+import { escucharPushEnPrimerPlano } from '../services/pushMessaging'
 import { calcularTomasDelDia } from '../utils/calcularTomas'
 import { getFechaHoy, getHoraActual } from '../utils/fecha'
 
@@ -29,11 +25,6 @@ export default function Hoy() {
     if (typeof window === 'undefined') return false
     return localStorage.getItem('alertasMedicRecuerda') === 'true'
   })
-  const [pushActivo, setPushActivo] = useState(() => {
-    if (typeof window === 'undefined') return false
-    return localStorage.getItem('pushMedicRecuerda') === 'true'
-  })
-  const [estadoPush, setEstadoPush] = useState('')
   const alertasEnviadasRef = useRef(new Set())
 
   const fecha = getFechaHoy()
@@ -105,33 +96,6 @@ export default function Hoy() {
   const desactivarNotificaciones = () => {
     setAlertasActivas(false)
     localStorage.setItem('alertasMedicRecuerda', 'false')
-  }
-
-  const activarPush = async () => {
-    if (!user) return
-    setEstadoPush('Activando push...')
-    try {
-      await activarPushRecordatorios(user.uid)
-      setPushActivo(true)
-      localStorage.setItem('pushMedicRecuerda', 'true')
-      setEstadoPush('Push en segundo plano activado.')
-    } catch (err) {
-      console.error(err)
-      setEstadoPush(err.message || 'No se pudo activar push.')
-    }
-  }
-
-  const desactivarPush = async () => {
-    if (!user) return
-    try {
-      await desactivarPushRecordatorios(user.uid)
-      setPushActivo(false)
-      localStorage.setItem('pushMedicRecuerda', 'false')
-      setEstadoPush('Push en segundo plano desactivado.')
-    } catch (err) {
-      console.error(err)
-      setEstadoPush('No se pudo desactivar push.')
-    }
   }
 
   useEffect(() => {
@@ -306,68 +270,6 @@ export default function Hoy() {
             weekday: 'long', day: 'numeric', month: 'long'
           })}
         </p>
-      </div>
-
-      {/* Control de notificaciones */}
-      <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-4 mb-6">
-        <p className="text-sm font-semibold text-indigo-800 mb-1">🔔 Recordatorios inteligentes</p>
-        <p className="text-xs text-indigo-700 mb-3">
-          Te avisamos 30 minutos antes y justo cuando sea momento de tu toma, con sonido incluido.
-        </p>
-
-        {permisoNotificaciones === 'denied' ? (
-          <p className="text-xs text-red-600 font-medium">
-            Tienes las notificaciones bloqueadas en el navegador. Actívalas en la configuración del sitio.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            <div className="flex gap-2">
-            {!alertasActivas || permisoNotificaciones !== 'granted' ? (
-              <button
-                onClick={activarNotificaciones}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold py-3 rounded-lg transition-colors"
-              >
-                Activar notificaciones
-              </button>
-            ) : (
-              <button
-                onClick={desactivarNotificaciones}
-                className="flex-1 bg-gray-500 hover:bg-gray-600 text-white text-sm font-semibold py-3 rounded-lg transition-colors"
-              >
-                Desactivar notificaciones
-              </button>
-            )}
-            <button
-              onClick={reproducirAlertaSonora}
-              className="flex-1 bg-white border border-indigo-300 hover:bg-indigo-100 text-indigo-700 text-sm font-semibold py-3 rounded-lg transition-colors"
-            >
-              Probar sonido
-            </button>
-            </div>
-
-            <div className="flex gap-2">
-              {!pushActivo ? (
-                <button
-                  onClick={activarPush}
-                  className="flex-1 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold py-3 rounded-lg transition-colors"
-                >
-                  Activar push en segundo plano
-                </button>
-              ) : (
-                <button
-                  onClick={desactivarPush}
-                  className="flex-1 bg-gray-500 hover:bg-gray-600 text-white text-sm font-semibold py-3 rounded-lg transition-colors"
-                >
-                  Desactivar push en segundo plano
-                </button>
-              )}
-            </div>
-
-            {estadoPush && (
-              <p className="text-xs font-medium text-indigo-800">{estadoPush}</p>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Banner tomas pasadas sin confirmar */}

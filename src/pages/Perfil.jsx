@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import {
   updateProfile,
@@ -10,6 +10,11 @@ import {
 import { doc, updateDoc } from 'firebase/firestore'
 import { auth, db } from '../services/firebase'
 import { useNavigate } from 'react-router-dom'
+import {
+  activarPushRecordatorios,
+  desactivarPushRecordatorios,
+  escucharPushEnPrimerPlano,
+} from '../services/pushMessaging'
 
 export default function Perfil() {
   const { user } = useAuth()
@@ -30,6 +35,20 @@ export default function Perfil() {
   const [exitoPassword, setExitoPassword] = useState(false)
   const [mostrarPasswords, setMostrarPasswords] = useState(false)
 
+  const [permisoNotificaciones, setPermisoNotificaciones] = useState(() => {
+    if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported'
+    return Notification.permission
+  })
+  const [alertasActivas, setAlertasActivas] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return localStorage.getItem('alertasMedicRecuerda') === 'true'
+  })
+  const [pushActivo, setPushActivo] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return localStorage.getItem('pushMedicRecuerda') === 'true'
+  })
+  const [estadoPush, setEstadoPush] = useState('')
+
   const [cerrando, setCerrando] = useState(false)
 
   const mensajesError = {
@@ -47,6 +66,116 @@ export default function Perfil() {
     setExitoPassword(false)
     setMostrarPasswords(false)
   }
+
+  const reproducirAlertaSonora = useCallback(() => {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)()
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+
+      osc.type = 'sine'
+      osc.frequency.value = 880
+      gain.gain.value = 0.03
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+
+      osc.start()
+      setTimeout(() => {
+        osc.stop()
+        ctx.close()
+      }, 250)
+    } catch (err) {
+      console.error('No se pudo reproducir sonido de alerta', err)
+    }
+  }, [])
+
+  const mostrarNotificacion = useCallback(async (titulo, cuerpo) => {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return
+
+    try {
+      if ('serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.ready
+        await reg.showNotification(titulo, {
+          body: cuerpo,
+          icon: '/icon-192x192.png',
+          badge: '/icon-192x192.png',
+          tag: 'medicrecuerda-recordatorio',
+          renotify: true,
+        })
+      } else {
+        new Notification(titulo, { body: cuerpo })
+      }
+    } catch (err) {
+      console.error('No se pudo mostrar notificación', err)
+    }
+
+    reproducirAlertaSonora()
+  }, [reproducirAlertaSonora])
+
+  const activarNotificaciones = async () => {
+    if (!('Notification' in window)) return
+    const permiso = await Notification.requestPermission()
+    setPermisoNotificaciones(permiso)
+
+    if (permiso === 'granted') {
+      setAlertasActivas(true)
+      localStorage.setItem('alertasMedicRecuerda', 'true')
+      await mostrarNotificacion('Recordatorios activados', 'Te avisaremos cuando una toma esté próxima o sea momento de tomarla.')
+    }
+  }
+
+  const desactivarNotificaciones = () => {
+    setAlertasActivas(false)
+    localStorage.setItem('alertasMedicRecuerda', 'false')
+  }
+
+  const activarPush = async () => {
+    if (!user) return
+    setEstadoPush('Activando push...')
+    try {
+      await activarPushRecordatorios(user.uid)
+      setPushActivo(true)
+      localStorage.setItem('pushMedicRecuerda', 'true')
+      setEstadoPush('Push en segundo plano activado.')
+    } catch (err) {
+      console.error(err)
+      setEstadoPush(err.message || 'No se pudo activar push.')
+    }
+  }
+
+  const desactivarPush = async () => {
+    if (!user) return
+    try {
+      await desactivarPushRecordatorios(user.uid)
+      setPushActivo(false)
+      localStorage.setItem('pushMedicRecuerda', 'false')
+      setEstadoPush('Push en segundo plano desactivado.')
+    } catch (err) {
+      console.error(err)
+      setEstadoPush('No se pudo desactivar push.')
+    }
+  }
+
+  useEffect(() => {
+    if (!('Notification' in window)) return
+    setPermisoNotificaciones(Notification.permission)
+  }, [])
+
+  useEffect(() => {
+    let unsub = () => {}
+
+    const init = async () => {
+      unsub = await escucharPushEnPrimerPlano(async (payload) => {
+        const title = payload?.notification?.title || 'MedicRecuerda'
+        const body = payload?.notification?.body || 'Tienes un recordatorio de medicamento.'
+        await mostrarNotificacion(title, body)
+      })
+    }
+
+    init()
+    return () => unsub()
+  }, [mostrarNotificacion])
 
   const handleGuardarNombre = async (e) => {
     e.preventDefault()
@@ -129,6 +258,72 @@ export default function Perfil() {
         <div>
           <p className="font-semibold text-gray-800 text-lg">{user?.displayName || 'Sin nombre'}</p>
           <p className="text-sm text-gray-500">{user?.email}</p>
+        </div>
+      </div>
+
+      {/* Notificaciones */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+        <div className="px-5 py-4 border-b border-gray-50 bg-gradient-to-r from-indigo-50 to-violet-50">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-indigo-800">🔔 Recordatorios inteligentes</p>
+              <p className="text-xs text-indigo-700 mt-1">
+                Controla alertas locales, sonido y notificaciones push en segundo plano.
+              </p>
+            </div>
+            <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white text-indigo-700 border border-indigo-100 whitespace-nowrap">
+              {permisoNotificaciones === 'granted'
+                ? 'Permiso activo'
+                : permisoNotificaciones === 'denied'
+                  ? 'Bloqueado'
+                  : 'Pendiente'}
+            </span>
+          </div>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {permisoNotificaciones === 'denied' ? (
+            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl px-4 py-3">
+              Tienes las notificaciones bloqueadas en el navegador. Actívalas desde la configuración del sitio para usar recordatorios.
+            </div>
+          ) : null}
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <button
+              onClick={alertasActivas && permisoNotificaciones === 'granted' ? desactivarNotificaciones : activarNotificaciones}
+              className={`w-full text-sm font-semibold py-3 rounded-xl transition-colors ${
+                alertasActivas && permisoNotificaciones === 'granted'
+                  ? 'bg-gray-500 hover:bg-gray-600 text-white'
+                  : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+              }`}
+            >
+              {alertasActivas && permisoNotificaciones === 'granted' ? 'Desactivar notificaciones' : 'Activar notificaciones'}
+            </button>
+
+            <button
+              onClick={reproducirAlertaSonora}
+              className="w-full bg-white border border-indigo-200 hover:bg-indigo-50 text-indigo-700 text-sm font-semibold py-3 rounded-xl transition-colors"
+            >
+              Probar sonido
+            </button>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <button
+              onClick={pushActivo ? desactivarPush : activarPush}
+              className={`w-full text-sm font-semibold py-3 rounded-xl transition-colors ${
+                pushActivo
+                  ? 'bg-gray-500 hover:bg-gray-600 text-white'
+                  : 'bg-violet-600 hover:bg-violet-700 text-white'
+              }`}
+            >
+              {pushActivo ? 'Desactivar push en segundo plano' : 'Activar push en segundo plano'}
+            </button>
+
+            <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-xs text-gray-600 flex items-center justify-center text-center">
+              {estadoPush || 'Activa push para recibir recordatorios aunque la app esté en otra pestaña.'}
+            </div>
+          </div>
         </div>
       </div>
 
