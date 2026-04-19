@@ -1,13 +1,10 @@
-import { StrictMode, useEffect, useState } from 'react'
+import { StrictMode, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { registerSW } from 'virtual:pwa-register'
 import { AuthProvider } from './context/AuthContext'
 import App from './App.jsx'
 import './index.css'
-
-let actualizarPWA = () => {}
-const UPDATE_BANNER_KEY = 'medicrecuerda-pwa-update-available'
 
 // Recover automatically if a stale cached chunk causes a preload error after deploy.
 const PRELOAD_RELOAD_KEY = 'medicrecuerda-preload-reload-ts'
@@ -26,127 +23,16 @@ window.addEventListener('vite:preloadError', (event) => {
 })
 
 function ShellAplicacion() {
-  const [hayActualizacion, setHayActualizacion] = useState(() => {
-    if (typeof window === 'undefined') return false
-    return localStorage.getItem(UPDATE_BANNER_KEY) === 'true'
-  })
-
-  const aplicarActualizacionAutomatica = () => {
-    localStorage.setItem(UPDATE_BANNER_KEY, 'true')
-    setHayActualizacion(true)
-
-    // Dar un instante para mostrar mensaje y aplicar la nueva versión sin intervención.
-    window.setTimeout(() => {
-      actualizarPWA(true)
-    }, 1200)
-  }
-
   useEffect(() => {
-    actualizarPWA = registerSW({
+    registerSW({
       immediate: true,
-      onNeedRefresh() {
-        aplicarActualizacionAutomatica()
-      },
       onOfflineReady() {
         console.info('MedicRecuerda ya está lista para uso offline.')
       },
     })
-
-    if (localStorage.getItem(UPDATE_BANNER_KEY) === 'true') {
-      window.setTimeout(() => {
-        actualizarPWA(true)
-      }, 1200)
-    }
   }, [])
 
-  useEffect(() => {
-    if (!('serviceWorker' in navigator)) return undefined
-
-    const controllerChangeHandler = () => {
-      localStorage.removeItem(UPDATE_BANNER_KEY)
-      window.location.reload()
-    }
-
-    navigator.serviceWorker.addEventListener('controllerchange', controllerChangeHandler)
-
-    return () => {
-      navigator.serviceWorker.removeEventListener('controllerchange', controllerChangeHandler)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!('serviceWorker' in navigator)) return undefined
-
-    const marcarActualizacionSiHayWaiting = async () => {
-      try {
-        const registration = await navigator.serviceWorker.getRegistration()
-        if (registration?.waiting && registration?.active) {
-          aplicarActualizacionAutomatica()
-        }
-      } catch (err) {
-        console.error('No se pudo validar waiting SW', err)
-      }
-    }
-
-    const forzarRevisionSw = () => {
-      navigator.serviceWorker.ready
-        .then((reg) => reg.update())
-        .then(() => marcarActualizacionSiHayWaiting())
-        .catch((err) => {
-          console.error('No se pudo revisar actualización del SW', err)
-        })
-    }
-
-    // Verificar actualizaciones cada vez que el usuario vuelve a la app
-    const visibilityHandler = () => {
-      if (document.visibilityState === 'visible') {
-        forzarRevisionSw()
-      }
-    }
-
-    // Si vuelve internet, intentar descargar la nueva versión de inmediato.
-    const onlineHandler = () => {
-      forzarRevisionSw()
-    }
-
-    document.addEventListener('visibilitychange', visibilityHandler)
-    window.addEventListener('online', onlineHandler)
-
-    marcarActualizacionSiHayWaiting()
-
-    // Revisión periódica para evitar versiones stale en sesiones largas.
-    const intervalId = window.setInterval(forzarRevisionSw, 60 * 1000)
-
-    return () => {
-      document.removeEventListener('visibilitychange', visibilityHandler)
-      window.removeEventListener('online', onlineHandler)
-      window.clearInterval(intervalId)
-    }
-  }, [])
-
-  return (
-    <>
-      {hayActualizacion && (
-        <div className="fixed inset-x-0 top-3 z-[9999] px-4">
-          <div className="mx-auto max-w-lg rounded-2xl border border-blue-200 bg-white/95 shadow-lg backdrop-blur px-4 py-3 flex items-center gap-3">
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-blue-800">Actualizando aplicación...</p>
-              <p className="text-xs text-blue-700">
-                Se detectó una versión nueva y se aplicará automáticamente en unos segundos.
-              </p>
-            </div>
-            <div className="shrink-0 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white">
-              ...
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className={hayActualizacion ? 'pt-24' : ''}>
-        <App />
-      </div>
-    </>
-  )
+  return <App />
 }
 
 createRoot(document.getElementById('root')).render(
