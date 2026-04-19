@@ -31,17 +31,32 @@ function ShellAplicacion() {
     return localStorage.getItem(UPDATE_BANNER_KEY) === 'true'
   })
 
+  const aplicarActualizacionAutomatica = () => {
+    localStorage.setItem(UPDATE_BANNER_KEY, 'true')
+    setHayActualizacion(true)
+
+    // Dar un instante para mostrar mensaje y aplicar la nueva versión sin intervención.
+    window.setTimeout(() => {
+      actualizarPWA(true)
+    }, 1200)
+  }
+
   useEffect(() => {
     actualizarPWA = registerSW({
       immediate: true,
       onNeedRefresh() {
-        localStorage.setItem(UPDATE_BANNER_KEY, 'true')
-        setHayActualizacion(true)
+        aplicarActualizacionAutomatica()
       },
       onOfflineReady() {
         console.info('MedicRecuerda ya está lista para uso offline.')
       },
     })
+
+    if (localStorage.getItem(UPDATE_BANNER_KEY) === 'true') {
+      window.setTimeout(() => {
+        actualizarPWA(true)
+      }, 1200)
+    }
   }, [])
 
   useEffect(() => {
@@ -66,8 +81,7 @@ function ShellAplicacion() {
       try {
         const registration = await navigator.serviceWorker.getRegistration()
         if (registration?.waiting && registration?.active) {
-          localStorage.setItem(UPDATE_BANNER_KEY, 'true')
-          setHayActualizacion(true)
+          aplicarActualizacionAutomatica()
         }
       } catch (err) {
         console.error('No se pudo validar waiting SW', err)
@@ -116,17 +130,14 @@ function ShellAplicacion() {
         <div className="fixed inset-x-0 top-3 z-[9999] px-4">
           <div className="mx-auto max-w-lg rounded-2xl border border-blue-200 bg-white/95 shadow-lg backdrop-blur px-4 py-3 flex items-center gap-3">
             <div className="flex-1">
-              <p className="text-sm font-semibold text-blue-800">Nueva versión disponible</p>
+              <p className="text-sm font-semibold text-blue-800">Actualizando aplicación...</p>
               <p className="text-xs text-blue-700">
-                Hay una actualización lista. Toca el botón para recargar la app.
+                Se detectó una versión nueva y se aplicará automáticamente en unos segundos.
               </p>
             </div>
-            <button
-              onClick={() => actualizarPWA(true)}
-              className="shrink-0 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
-            >
-              Actualizar
-            </button>
+            <div className="shrink-0 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white">
+              ...
+            </div>
           </div>
         </div>
       )}
