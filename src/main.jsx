@@ -1,4 +1,4 @@
-import { StrictMode, useEffect } from 'react'
+import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import { registerSW } from 'virtual:pwa-register'
@@ -22,24 +22,13 @@ window.addEventListener('vite:preloadError', (event) => {
   window.location.reload()
 })
 
-function ShellAplicacion() {
-  useEffect(() => {
-    registerSW({
-      immediate: true,
-      onOfflineReady() {
-        console.info('MedicRecuerda ya está lista para uso offline.')
-      },
-    })
-  }, [])
-
-  return <App />
-}
+registerSW({ immediate: true })
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>
       <AuthProvider>
-        <ShellAplicacion />
+        <App />
       </AuthProvider>
     </BrowserRouter>
   </StrictMode>
