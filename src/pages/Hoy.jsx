@@ -35,13 +35,6 @@ export default function Hoy() {
     return h * 60 + m
   }
 
-  const formatearFecha = (fechaIso) => {
-    if (!fechaIso) return '--/--/----'
-    const [anio, mes, dia] = fechaIso.split('-')
-    if (!anio || !mes || !dia) return fechaIso
-    return `${dia}/${mes}/${anio}`
-  }
-
   const formatearHora12h = (hora24) => {
     if (!hora24) return '--:--'
     const [hStr, mStr] = hora24.split(':')
@@ -414,7 +407,7 @@ export default function Hoy() {
                     <p className="font-semibold text-gray-800 text-base">{toma.medicamentoNombre}</p>
                     <p className="text-sm font-medium text-gray-600 mt-0.5">{toma.dosis}</p>
                     <p className={`text-sm mt-1 font-semibold ${esPasada ? 'text-red-500' : 'text-yellow-600'}`}>
-                      {esPasada ? '⚠️ Atrasada' : '🕐 Pendiente'} · {formatearFecha(toma.fechaProgramada)} {formatearHora12h(toma.horaProgramada)}
+                      {esPasada ? '⚠️ Atrasada' : '🕐 Pendiente'} · {formatearHora12h(toma.horaProgramada)}
                     </p>
                   </div>
                   <div className="flex flex-col gap-2 w-28">
@@ -460,7 +453,7 @@ export default function Hoy() {
                   <p className="font-semibold text-gray-700 text-base">{toma.medicamentoNombre}</p>
                   <p className="text-sm font-medium text-gray-500 mt-0.5">{toma.dosis}</p>
                   <p className="text-sm mt-1 text-gray-600 font-semibold">
-                    ⏭️ Omitida · {formatearFecha(toma.fechaProgramada)} {formatearHora12h(toma.horaProgramada)}
+                    ⏭️ Omitida · {formatearHora12h(toma.horaProgramada)}
                   </p>
                 </div>
                 <span className="text-xl">⏭️</span>
@@ -488,7 +481,7 @@ export default function Hoy() {
                     <p className="font-semibold text-gray-700 text-base">{toma.medicamentoNombre}</p>
                     <p className="text-sm font-medium text-gray-500 mt-0.5">{toma.dosis}</p>
                     <p className="text-sm mt-1 text-green-600 font-semibold">
-                      ✅ Tomada · {formatearFecha(toma.fechaProgramada)} {formatearHora12h(horaReal || toma.horaProgramada)}
+                      ✅ Tomada · {formatearHora12h(horaReal || toma.horaProgramada)}
                     </p>
                   </div>
                   <span className="text-2xl">✓</span>
@@ -573,7 +566,7 @@ export default function Hoy() {
             </p>
             <p className="text-lg font-semibold text-gray-800 mb-2">esta dosis?</p>
             <p className="text-sm text-gray-600 mb-5">
-              {confirmarOmitirToma.medicamentoNombre} · {confirmarOmitirToma.dosis} · {formatearFecha(confirmarOmitirToma.fechaProgramada)} {formatearHora12h(confirmarOmitirToma.horaProgramada)}
+              {confirmarOmitirToma.medicamentoNombre} · {confirmarOmitirToma.dosis} · {formatearHora12h(confirmarOmitirToma.horaProgramada)}
             </p>
 
             <div className="flex gap-3">
