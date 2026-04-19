@@ -18,6 +18,7 @@ export default function Hoy() {
   const [horaRealInput, setHoraRealInput] = useState('')
   const [confirmarPasadas, setConfirmarPasadas] = useState(null)
   const [horaConfirmacionPasadas, setHoraConfirmacionPasadas] = useState(getHoraActual())
+  const [horaActual, setHoraActual] = useState(getHoraActual())
   const [permisoNotificaciones, setPermisoNotificaciones] = useState(
     typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'unsupported'
   )
@@ -28,7 +29,6 @@ export default function Hoy() {
   const alertasEnviadasRef = useRef(new Set())
 
   const fecha = getFechaHoy()
-  const horaActual = getHoraActual()
   const fechaLegible = new Date(`${fecha}T00:00:00`).toLocaleDateString('es-MX', {
     weekday: 'long',
     day: 'numeric',
@@ -51,6 +51,13 @@ export default function Hoy() {
     const sufijo = h >= 12 ? 'pm' : 'am'
     const hora12 = h % 12 === 0 ? 12 : h % 12
     return `${String(hora12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${sufijo}`
+  }
+
+  const formatearFechaCorta = (fechaIso) => {
+    if (!fechaIso) return '--/--/----'
+    const [anio, mes, dia] = fechaIso.split('-')
+    if (!anio || !mes || !dia) return fechaIso
+    return `${dia}/${mes}/${anio}`
   }
 
   const reproducirAlertaSonora = useCallback(() => {
@@ -131,6 +138,14 @@ export default function Hoy() {
     setAlertasActivas(false)
     localStorage.setItem('alertasMedicRecuerda', 'false')
   }
+
+  useEffect(() => {
+    const actualizarHora = () => setHoraActual(getHoraActual())
+    actualizarHora()
+
+    const intervalId = setInterval(actualizarHora, 30000)
+    return () => clearInterval(intervalId)
+  }, [])
 
   useEffect(() => {
     if (!user) return
@@ -415,9 +430,17 @@ export default function Hoy() {
                   <div>
                     <p className="font-semibold text-gray-800 text-base">{toma.medicamentoNombre}</p>
                     <p className="text-sm font-medium text-gray-600 mt-0.5">{toma.dosis}</p>
-                    <p className={`text-sm mt-1 font-semibold ${esPasada ? 'text-red-500' : 'text-yellow-600'}`}>
-                      {esPasada ? '⚠️ Atrasada' : '🕐 Pendiente'} · {formatearHora12h(toma.horaProgramada)}
-                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span className={`rounded-md px-2 py-1 text-xs font-semibold ${esPasada ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+                        {esPasada ? '⚠️ Atrasada' : '🕐 Pendiente'}
+                      </span>
+                      <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
+                        {formatearFechaCorta(toma.fechaProgramada)}
+                      </span>
+                      <span className="rounded-md bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700">
+                        {formatearHora12h(toma.horaProgramada)}
+                      </span>
+                    </div>
                   </div>
                   <div className="flex flex-col gap-2 w-28">
                     <button
@@ -461,9 +484,14 @@ export default function Hoy() {
                 <div>
                   <p className="font-semibold text-gray-700 text-base">{toma.medicamentoNombre}</p>
                   <p className="text-sm font-medium text-gray-500 mt-0.5">{toma.dosis}</p>
-                  <p className="text-sm mt-1 text-gray-600 font-semibold">
-                    ⏭️ Omitida · {formatearHora12h(toma.horaProgramada)}
-                  </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
+                      {formatearFechaCorta(toma.fechaProgramada)}
+                    </span>
+                    <span className="rounded-md bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-700">
+                      {formatearHora12h(toma.horaProgramada)}
+                    </span>
+                  </div>
                 </div>
                 <span className="text-xl">⏭️</span>
               </div>
@@ -489,9 +517,14 @@ export default function Hoy() {
                   <div>
                     <p className="font-semibold text-gray-700 text-base">{toma.medicamentoNombre}</p>
                     <p className="text-sm font-medium text-gray-500 mt-0.5">{toma.dosis}</p>
-                    <p className="text-sm mt-1 text-green-600 font-semibold">
-                      ✅ Tomada · {formatearHora12h(horaReal || toma.horaProgramada)}
-                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
+                        {formatearFechaCorta(toma.fechaProgramada)}
+                      </span>
+                      <span className="rounded-md bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">
+                        {formatearHora12h(horaReal || toma.horaProgramada)}
+                      </span>
+                    </div>
                   </div>
                   <span className="text-2xl">✓</span>
                 </div>
@@ -575,7 +608,7 @@ export default function Hoy() {
             </p>
             <p className="text-lg font-semibold text-gray-800 mb-2">esta dosis?</p>
             <p className="text-sm text-gray-600 mb-5">
-              {confirmarOmitirToma.medicamentoNombre} · {confirmarOmitirToma.dosis} · {formatearHora12h(confirmarOmitirToma.horaProgramada)}
+              {confirmarOmitirToma.medicamentoNombre} · {confirmarOmitirToma.dosis} · {formatearFechaCorta(confirmarOmitirToma.fechaProgramada)} · {formatearHora12h(confirmarOmitirToma.horaProgramada)}
             </p>
 
             <div className="flex gap-3">
