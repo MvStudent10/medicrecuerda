@@ -53,13 +53,6 @@ export default function Hoy() {
     return `${String(hora12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${sufijo}`
   }
 
-  const formatearFechaCorta = (fechaIso) => {
-    if (!fechaIso) return '--/--/----'
-    const [anio, mes, dia] = fechaIso.split('-')
-    if (!anio || !mes || !dia) return fechaIso
-    return `${dia}/${mes}/${anio}`
-  }
-
   const reproducirAlertaSonora = useCallback(() => {
     try {
       const AudioContextCtor = window.AudioContext || window.webkitAudioContext
@@ -434,9 +427,6 @@ export default function Hoy() {
                       <span className={`rounded-md px-2 py-1 text-xs font-semibold ${esPasada ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
                         {esPasada ? '⚠️ Atrasada' : '🕐 Pendiente'}
                       </span>
-                      <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
-                        {formatearFechaCorta(toma.fechaProgramada)}
-                      </span>
                       <span className="rounded-md bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700">
                         {formatearHora12h(toma.horaProgramada)}
                       </span>
@@ -485,9 +475,6 @@ export default function Hoy() {
                   <p className="font-semibold text-gray-700 text-base">{toma.medicamentoNombre}</p>
                   <p className="text-sm font-medium text-gray-500 mt-0.5">{toma.dosis}</p>
                   <div className="mt-2 flex flex-wrap items-center gap-2">
-                    <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
-                      {formatearFechaCorta(toma.fechaProgramada)}
-                    </span>
                     <span className="rounded-md bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-700">
                       {formatearHora12h(toma.horaProgramada)}
                     </span>
@@ -518,9 +505,6 @@ export default function Hoy() {
                     <p className="font-semibold text-gray-700 text-base">{toma.medicamentoNombre}</p>
                     <p className="text-sm font-medium text-gray-500 mt-0.5">{toma.dosis}</p>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
-                        {formatearFechaCorta(toma.fechaProgramada)}
-                      </span>
                       <span className="rounded-md bg-green-100 px-2 py-1 text-xs font-semibold text-green-700">
                         {formatearHora12h(horaReal || toma.horaProgramada)}
                       </span>
@@ -608,7 +592,7 @@ export default function Hoy() {
             </p>
             <p className="text-lg font-semibold text-gray-800 mb-2">esta dosis?</p>
             <p className="text-sm text-gray-600 mb-5">
-              {confirmarOmitirToma.medicamentoNombre} · {confirmarOmitirToma.dosis} · {formatearFechaCorta(confirmarOmitirToma.fechaProgramada)} · {formatearHora12h(confirmarOmitirToma.horaProgramada)}
+              {confirmarOmitirToma.medicamentoNombre} · {confirmarOmitirToma.dosis} · {formatearHora12h(confirmarOmitirToma.horaProgramada)}
             </p>
 
             <div className="flex gap-3">
