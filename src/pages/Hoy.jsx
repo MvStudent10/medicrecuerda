@@ -6,7 +6,7 @@ import { escucharPushEnPrimerPlano } from '../services/pushMessaging'
 import { calcularTomasDelDia } from '../utils/calcularTomas'
 import { getFechaHoy, getHoraActual } from '../utils/fecha'
 
-const ALERTAS_MINUTOS_ANTES = 30
+const ALERTAS_PREVIAS_MINUTOS = [10, 5, 2]
 
 export default function Hoy() {
   const { user } = useAuth()
@@ -33,6 +33,25 @@ export default function Hoy() {
   const convertirHoraAMinutos = (hora) => {
     const [h, m] = hora.split(':').map(Number)
     return h * 60 + m
+  }
+
+  const formatearFecha = (fechaIso) => {
+    if (!fechaIso) return '--/--/----'
+    const [anio, mes, dia] = fechaIso.split('-')
+    if (!anio || !mes || !dia) return fechaIso
+    return `${dia}/${mes}/${anio}`
+  }
+
+  const formatearHora12h = (hora24) => {
+    if (!hora24) return '--:--'
+    const [hStr, mStr] = hora24.split(':')
+    const h = Number(hStr)
+    const m = Number(mStr)
+    if (Number.isNaN(h) || Number.isNaN(m)) return hora24
+
+    const sufijo = h >= 12 ? 'pm' : 'am'
+    const hora12 = h % 12 === 0 ? 12 : h % 12
+    return `${String(hora12).padStart(2, '0')}:${String(m).padStart(2, '0')} ${sufijo}`
   }
 
   const reproducirAlertaSonora = useCallback(() => {
@@ -178,16 +197,18 @@ export default function Hoy() {
         const diff = minutosToma - minutosActuales
         const idBase = `${fecha}_${tomaId(toma)}`
 
-        const esProxima = diff <= ALERTAS_MINUTOS_ANTES && diff >= ALERTAS_MINUTOS_ANTES - 1
-        if (esProxima) {
-          const clave = `${idBase}_proxima`
-          if (!alertasEnviadasRef.current.has(clave)) {
-            alertasEnviadasRef.current.add(clave)
-            await mostrarNotificacion(
-              'Toma próxima',
-              `${toma.medicamentoNombre}: en ${ALERTAS_MINUTOS_ANTES} minutos (${toma.horaProgramada}).`
-            )
-          }
+        for (const minutosPrevios of ALERTAS_PREVIAS_MINUTOS) {
+          const esProxima = diff <= minutosPrevios && diff >= minutosPrevios - 1
+          if (!esProxima) continue
+
+          const clave = `${idBase}_previa_${minutosPrevios}`
+          if (alertasEnviadasRef.current.has(clave)) continue
+
+          alertasEnviadasRef.current.add(clave)
+          await mostrarNotificacion(
+            'Toma próxima',
+            `${toma.medicamentoNombre}: en ${minutosPrevios} minutos (${toma.horaProgramada}).`
+          )
         }
 
         const esMomento = diff <= 0 && diff >= -1
@@ -393,7 +414,7 @@ export default function Hoy() {
                     <p className="font-semibold text-gray-800 text-base">{toma.medicamentoNombre}</p>
                     <p className="text-sm font-medium text-gray-600 mt-0.5">{toma.dosis}</p>
                     <p className={`text-sm mt-1 font-semibold ${esPasada ? 'text-red-500' : 'text-yellow-600'}`}>
-                      {esPasada ? '⚠️ Atrasada' : '🕐 Pendiente'} · {toma.horaProgramada}
+                      {esPasada ? '⚠️ Atrasada' : '🕐 Pendiente'} · {formatearFecha(toma.fechaProgramada)} {formatearHora12h(toma.horaProgramada)}
                     </p>
                   </div>
                   <div className="flex flex-col gap-2 w-28">
@@ -439,7 +460,7 @@ export default function Hoy() {
                   <p className="font-semibold text-gray-700 text-base">{toma.medicamentoNombre}</p>
                   <p className="text-sm font-medium text-gray-500 mt-0.5">{toma.dosis}</p>
                   <p className="text-sm mt-1 text-gray-600 font-semibold">
-                    ⏭️ Omitida · {toma.horaProgramada}
+                    ⏭️ Omitida · {formatearFecha(toma.fechaProgramada)} {formatearHora12h(toma.horaProgramada)}
                   </p>
                 </div>
                 <span className="text-xl">⏭️</span>
@@ -467,7 +488,7 @@ export default function Hoy() {
                     <p className="font-semibold text-gray-700 text-base">{toma.medicamentoNombre}</p>
                     <p className="text-sm font-medium text-gray-500 mt-0.5">{toma.dosis}</p>
                     <p className="text-sm mt-1 text-green-600 font-semibold">
-                      ✅ Tomada a las {horaReal || toma.horaProgramada}
+                      ✅ Tomada · {formatearFecha(toma.fechaProgramada)} {formatearHora12h(horaReal || toma.horaProgramada)}
                     </p>
                   </div>
                   <span className="text-2xl">✓</span>
@@ -552,7 +573,7 @@ export default function Hoy() {
             </p>
             <p className="text-lg font-semibold text-gray-800 mb-2">esta dosis?</p>
             <p className="text-sm text-gray-600 mb-5">
-              {confirmarOmitirToma.medicamentoNombre} · {confirmarOmitirToma.dosis} · {confirmarOmitirToma.horaProgramada}
+              {confirmarOmitirToma.medicamentoNombre} · {confirmarOmitirToma.dosis} · {formatearFecha(confirmarOmitirToma.fechaProgramada)} {formatearHora12h(confirmarOmitirToma.horaProgramada)}
             </p>
 
             <div className="flex gap-3">

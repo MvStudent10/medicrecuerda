@@ -8,7 +8,7 @@ const db = admin.firestore()
 const messaging = admin.messaging()
 
 const TZ = 'America/Mexico_City'
-const MINUTOS_ANTES = 30
+const ALERTAS_PREVIAS_MINUTOS = [10, 5, 2]
 
 function getFechaYHoraEnTZ(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -185,11 +185,17 @@ async function procesarUsuario(usuarioDoc, contexto) {
     let title = ''
     let body = ''
 
-    if (diff <= MINUTOS_ANTES && diff >= MINUTOS_ANTES - 1) {
-      tipo = 'proxima'
+    for (const minutosPrevios of ALERTAS_PREVIAS_MINUTOS) {
+      const esProxima = diff <= minutosPrevios && diff >= minutosPrevios - 1
+      if (!esProxima) continue
+
+      tipo = `previa_${minutosPrevios}`
       title = 'Toma proxima'
-      body = `${toma.medicamentoNombre}: en ${MINUTOS_ANTES} minutos (${toma.horaProgramada}).`
-    } else if (diff <= 0 && diff >= -1) {
+      body = `${toma.medicamentoNombre}: en ${minutosPrevios} minutos (${toma.horaProgramada}).`
+      break
+    }
+
+    if (!tipo && diff <= 0 && diff >= -1) {
       tipo = 'momento'
       title = 'Es momento de tu toma'
       body = `${toma.medicamentoNombre} (${toma.dosis}) a las ${toma.horaProgramada}.`
