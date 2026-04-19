@@ -62,10 +62,22 @@ function ShellAplicacion() {
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return undefined
 
+    const marcarActualizacionSiHayWaiting = async () => {
+      try {
+        const registration = await navigator.serviceWorker.getRegistration()
+        if (registration?.waiting && registration?.active) {
+          localStorage.setItem(UPDATE_BANNER_KEY, 'true')
+          setHayActualizacion(true)
+        }
+      } catch (err) {
+        console.error('No se pudo validar waiting SW', err)
+      }
+    }
+
     const forzarRevisionSw = () => {
-      actualizarPWA?.()
       navigator.serviceWorker.ready
         .then((reg) => reg.update())
+        .then(() => marcarActualizacionSiHayWaiting())
         .catch((err) => {
           console.error('No se pudo revisar actualización del SW', err)
         })
@@ -85,6 +97,8 @@ function ShellAplicacion() {
 
     document.addEventListener('visibilitychange', visibilityHandler)
     window.addEventListener('online', onlineHandler)
+
+    marcarActualizacionSiHayWaiting()
 
     // Revisión periódica para evitar versiones stale en sesiones largas.
     const intervalId = window.setInterval(forzarRevisionSw, 60 * 1000)
