@@ -29,6 +29,12 @@ export default function Hoy() {
 
   const fecha = getFechaHoy()
   const horaActual = getHoraActual()
+  const fechaLegible = new Date(`${fecha}T00:00:00`).toLocaleDateString('es-MX', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
 
   const convertirHoraAMinutos = (hora) => {
     const [h, m] = hora.split(':').map(Number)
@@ -293,13 +299,16 @@ export default function Hoy() {
     <div className="max-w-lg mx-auto px-4 py-6">
 
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">👋 Hoy</h1>
-        <p className="text-gray-500 text-sm mt-1">
-          {new Date().toLocaleDateString('es-MX', {
-            weekday: 'long', day: 'numeric', month: 'long'
-          })}
-        </p>
+      <div className="mb-6 rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800">👋 Hoy</h1>
+            <p className="text-slate-500 text-sm mt-1 capitalize">{fechaLegible}</p>
+          </div>
+          <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 border border-blue-100">
+            {formatearHora12h(horaActual)}
+          </span>
+        </div>
       </div>
 
       {/* Banner tomas pasadas sin confirmar */}
