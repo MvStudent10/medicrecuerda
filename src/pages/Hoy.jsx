@@ -37,22 +37,38 @@ export default function Hoy() {
 
   const reproducirAlertaSonora = useCallback(() => {
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)()
-      const osc = ctx.createOscillator()
-      const gain = ctx.createGain()
+      const AudioContextCtor = window.AudioContext || window.webkitAudioContext
+      if (!AudioContextCtor) return
 
-      osc.type = 'sine'
-      osc.frequency.value = 880
-      gain.gain.value = 0.03
+      const ctx = new AudioContextCtor()
+      const inicio = ctx.currentTime
+      const patron = [
+        { at: 0.0, dur: 0.16, from: 820, to: 980 },
+        { at: 0.24, dur: 0.16, from: 760, to: 940 },
+        { at: 0.48, dur: 0.2, from: 980, to: 1220 },
+      ]
 
-      osc.connect(gain)
-      gain.connect(ctx.destination)
+      patron.forEach(({ at, dur, from, to }) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
 
-      osc.start()
+        osc.type = 'triangle'
+        osc.frequency.setValueAtTime(from, inicio + at)
+        osc.frequency.linearRampToValueAtTime(to, inicio + at + dur)
+
+        gain.gain.setValueAtTime(0.0001, inicio + at)
+        gain.gain.exponentialRampToValueAtTime(0.08, inicio + at + 0.02)
+        gain.gain.exponentialRampToValueAtTime(0.0001, inicio + at + dur)
+
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.start(inicio + at)
+        osc.stop(inicio + at + dur)
+      })
+
       setTimeout(() => {
-        osc.stop()
-        ctx.close()
-      }, 250)
+        ctx.close().catch(() => {})
+      }, 1100)
     } catch (err) {
       console.error('No se pudo reproducir sonido de alerta', err)
     }
